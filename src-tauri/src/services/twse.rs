@@ -27,7 +27,7 @@ pub struct TwseCompanyRaw {
     pub code: String,
     #[serde(rename = "公司簡稱")]
     pub name: String,
-    #[serde(rename = "產業類別")]
+    #[serde(rename = "產業別")]
     pub industry_category: String,
 }
 
@@ -101,7 +101,9 @@ impl TwseClient {
             return Err(TwseError::Api(format!("HTTP {}", resp.status())));
         }
 
-        let companies: Vec<TwseCompanyRaw> = resp.json().await?;
+        let text = resp.text().await?;
+        let companies: Vec<TwseCompanyRaw> = serde_json::from_str(&text)
+            .map_err(|e| TwseError::Api(format!("JSON parse error: {e}")))?;
         Ok(companies)
     }
 
@@ -127,7 +129,9 @@ impl TwseClient {
             return Err(TwseError::Api(format!("HTTP {}", resp.status())));
         }
 
-        let raw: Vec<TwseDayQuoteRaw> = resp.json().await?;
+        let text = resp.text().await?;
+        let raw: Vec<TwseDayQuoteRaw> = serde_json::from_str(&text)
+            .map_err(|e| TwseError::Api(format!("JSON parse error: {e}")))?;
         let quotes: Vec<TwseDayQuote> = raw
             .into_iter()
             .map(|r| TwseDayQuote {
