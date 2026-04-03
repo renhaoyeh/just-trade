@@ -23,6 +23,7 @@ import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { SectorStock } from "@/types/stock";
 import { getSectorStocks } from "@/services/stockService";
+import { industryName } from "@/utils/industryMap";
 
 export default function SectorDetail() {
   const { t } = useTranslation();
@@ -58,7 +59,7 @@ export default function SectorDetail() {
           {t("sectorDetail.backToSectors")}
         </Button>
         <Separator orientation="vertical" className="h-4" />
-        <h1 className="text-sm font-semibold">{sector}</h1>
+        <h1 className="text-sm font-semibold">{industryName(sector)}</h1>
         <div className="ml-auto">
           <ThemeToggle />
         </div>
@@ -73,7 +74,7 @@ export default function SectorDetail() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{sector}</CardTitle>
+            <CardTitle>{industryName(sector)}</CardTitle>
             <CardDescription>
               {stocks.length > 0
                 ? t("sectors.stockCount", { count: stocks.length })

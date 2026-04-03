@@ -14,6 +14,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import type { Sector } from "@/types/stock";
 import { getSectors } from "@/services/stockService";
+import { industryName } from "@/utils/industryMap";
 
 export default function Sectors() {
   const { t } = useTranslation();
@@ -66,7 +67,7 @@ export default function Sectors() {
               >
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-base">
-                    {sector.name}
+                    {industryName(sector.name)}
                     <Badge variant="outline">
                       {t("sectors.stockCount", { count: sector.stock_count })}
                     </Badge>
