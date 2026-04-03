@@ -1,28 +1,31 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("App", () => {
-  test("should display welcome heading", async ({ page }) => {
+test.describe("Dashboard", () => {
+  test("should display app heading", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toHaveText("Welcome to Tauri + React");
+    await expect(page.locator("text=Just Trade")).toBeVisible();
   });
 
-  test("should render logos and description", async ({ page }) => {
+  test("should render stat cards", async ({ page }) => {
     await page.goto("/");
-
-    await expect(page.locator('img[alt="Vite logo"]')).toBeVisible();
-    await expect(page.locator('img[alt="React logo"]')).toBeVisible();
-    await expect(
-      page.locator("text=Click on the Tauri, Vite, and React logos")
-    ).toBeVisible();
+    await expect(page.locator("text=Total Portfolio")).toBeVisible();
+    await expect(page.locator("text=Today's P&L")).toBeVisible();
+    await expect(page.locator("text=Buying Power")).toBeVisible();
+    await expect(page.locator("text=Open Orders")).toBeVisible();
   });
 
-  test("should have a greet form with input and button", async ({ page }) => {
+  test("should switch between tabs", async ({ page }) => {
     await page.goto("/");
 
-    const input = page.locator('input[placeholder="Enter a name..."]');
-    const button = page.locator('button[type="submit"]');
+    // Default tab should show Holdings
+    await expect(page.locator("text=Holdings")).toBeVisible();
 
-    await expect(input).toBeVisible();
-    await expect(button).toHaveText("Greet");
+    // Switch to Recent Trades
+    await page.click("text=Recent Trades");
+    await expect(page.locator("text=Today's executed orders")).toBeVisible();
+
+    // Switch to Watchlist
+    await page.click("text=Watchlist");
+    await expect(page.locator("text=META")).toBeVisible();
   });
 });

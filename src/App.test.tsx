@@ -1,34 +1,22 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
 import App from "@/App";
 
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn((_cmd: string, args: { name: string }) =>
-    Promise.resolve(`Hello, ${args.name}! You've been greeted from Rust!`)
-  ),
-}));
-
 describe("App", () => {
-  it("renders the welcome heading", () => {
+  it("renders the dashboard heading", () => {
     render(<App />);
-    expect(
-      screen.getByText("Welcome to Tauri + React")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Just Trade")).toBeInTheDocument();
   });
 
-  it("greets the user when form is submitted", async () => {
+  it("renders portfolio stat cards", () => {
     render(<App />);
+    expect(screen.getByText("Total Portfolio")).toBeInTheDocument();
+    expect(screen.getByText("$35,448.90")).toBeInTheDocument();
+  });
 
-    const input = screen.getByPlaceholderText("Enter a name...");
-    const button = screen.getByText("Greet");
-
-    fireEvent.change(input, { target: { value: "World" } });
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("Hello, World! You've been greeted from Rust!")
-      ).toBeInTheDocument();
-    });
+  it("renders portfolio holdings table", () => {
+    render(<App />);
+    expect(screen.getByText("AAPL")).toBeInTheDocument();
+    expect(screen.getByText("NVDA")).toBeInTheDocument();
   });
 });
