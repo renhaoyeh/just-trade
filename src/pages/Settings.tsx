@@ -35,12 +35,17 @@ interface ProviderSettings {
   base_url: string | null;
 }
 
+interface FugleSettings {
+  api_key: string | null;
+}
+
 interface AppSettings {
   openai: ProviderSettings | null;
   anthropic: ProviderSettings | null;
   google: ProviderSettings | null;
   groq: ProviderSettings | null;
   ollama: ProviderSettings | null;
+  fugle: FugleSettings | null;
 }
 
 const PROVIDERS = [
@@ -191,6 +196,7 @@ export default function Settings() {
     google: null,
     groq: null,
     ollama: null,
+    fugle: null,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -230,6 +236,32 @@ export default function Settings() {
       </header>
 
       <div className="flex-1 space-y-4 p-6 max-w-2xl">
+        {/* Fugle MarketData API */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("fugle.title")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">{t("fugle.apiKey")}</label>
+              <Input
+                type="password"
+                value={settings.fugle?.api_key || ""}
+                onChange={(e) => {
+                  setSettings((prev) => ({
+                    ...prev,
+                    fugle: { api_key: e.target.value || null },
+                  }));
+                  setSaved(false);
+                }}
+                placeholder={t("fugle.placeholder")}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
         {PROVIDERS.map((p) => (
           <ProviderCard
             key={p.id}

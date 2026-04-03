@@ -55,3 +55,51 @@ export interface SectorStock {
   change: number | null;
   trade_volume: number | null;
 }
+
+// ---------------------------------------------------------------------------
+// Fugle WebSocket
+// ---------------------------------------------------------------------------
+
+export interface FugleTrade {
+  symbol: string;
+  price: number | null;
+  size: number | null;
+  volume: number | null;
+  bid: number | null;
+  ask: number | null;
+  time: string | null;
+  serial: string | null;
+  isOpen: boolean | null;
+  isClose: boolean | null;
+  isLimitUpPrice: boolean | null;
+  isLimitDownPrice: boolean | null;
+  isTrial: boolean | null;
+}
+
+export interface BookLevel {
+  price: number | null;
+  size: number | null;
+}
+
+export interface FugleBook {
+  symbol: string;
+  bids: BookLevel[];
+  asks: BookLevel[];
+  time: string | null;
+}
+
+export interface FugleCandle {
+  symbol: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+  average: number | null;
+  time: string | null;
+}
+
+export interface FugleWsStatus {
+  connected: boolean;
+  message: string;
+}

@@ -4,6 +4,7 @@ import {
   Buildings,
   Robot,
   GearSix,
+  Pulse,
 } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -24,6 +25,7 @@ const mainNav = [
   { titleKey: "nav.dashboard", icon: ChartLine, path: "/" },
   { titleKey: "nav.sectors", icon: Buildings, path: "/sectors" },
   { titleKey: "nav.tradingAgents", icon: Robot, path: "/trading-agents" },
+  { titleKey: "nav.realtime", icon: Pulse, path: "/realtime" },
   { titleKey: "nav.settings", icon: GearSix, path: "/settings" },
 ];
 

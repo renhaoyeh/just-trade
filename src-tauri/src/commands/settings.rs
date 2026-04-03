@@ -36,6 +36,12 @@ impl Default for AnalysisSettings {
     }
 }
 
+/// Fugle MarketData API settings
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct FugleSettings {
+    pub api_key: Option<String>,
+}
+
 /// App settings persisted as JSON in the app data directory
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppSettings {
@@ -45,6 +51,7 @@ pub struct AppSettings {
     pub groq: Option<ProviderSettings>,
     pub ollama: Option<ProviderSettings>,
     pub analysis: Option<AnalysisSettings>,
+    pub fugle: Option<FugleSettings>,
 }
 
 fn settings_path(app: &AppHandle) -> PathBuf {

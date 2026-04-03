@@ -4,6 +4,7 @@ import Dashboard from "@/pages/Dashboard";
 import Sectors from "@/pages/Sectors";
 import SectorDetail from "@/pages/SectorDetail";
 import Analysis from "@/pages/Analysis";
+import RealtimeQuotes from "@/pages/RealtimeQuotes";
 import Settings from "@/pages/Settings";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/sectors" element={<Sectors />} />
           <Route path="/sectors/:sectorName" element={<SectorDetail />} />
           <Route path="/trading-agents" element={<Analysis />} />
+          <Route path="/realtime" element={<RealtimeQuotes />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

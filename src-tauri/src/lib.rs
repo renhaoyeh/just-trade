@@ -18,6 +18,8 @@ pub fn run() {
             app.manage(yahoo_client);
             let twse_client = services::twse::TwseClient::new();
             app.manage(twse_client);
+            let fugle_ws = services::fugle::FugleWsClient::new();
+            app.manage(fugle_ws);
 
             // Initialize SQLite database in app data directory
             let app_data = app.path().app_data_dir().expect("Failed to get app data dir");
@@ -48,6 +50,11 @@ pub fn run() {
             commands::analysis::get_analysis_detail,
             commands::settings::get_settings,
             commands::settings::save_settings,
+            commands::fugle::fugle_ws_connect,
+            commands::fugle::fugle_ws_disconnect,
+            commands::fugle::fugle_ws_subscribe,
+            commands::fugle::fugle_ws_unsubscribe,
+            commands::fugle::fugle_ws_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

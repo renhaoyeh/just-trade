@@ -49,12 +49,17 @@ export interface ProviderSettings {
   base_url: string | null;
 }
 
+export interface FugleSettings {
+  api_key: string | null;
+}
+
 export interface AppSettings {
   openai: ProviderSettings | null;
   anthropic: ProviderSettings | null;
   google: ProviderSettings | null;
   groq: ProviderSettings | null;
   ollama: ProviderSettings | null;
+  fugle: FugleSettings | null;
 }
 
 export async function getSettings(): Promise<AppSettings> {
@@ -120,4 +125,34 @@ export async function getAnalysisDetail(id: number): Promise<unknown> {
 
 export async function getLlmModels(provider: string): Promise<string[]> {
   return invoke("llm_models", { provider });
+}
+
+// ---------------------------------------------------------------------------
+// Fugle WebSocket
+// ---------------------------------------------------------------------------
+
+export async function fugleWsConnect(apiKey: string): Promise<void> {
+  return invoke("fugle_ws_connect", { apiKey });
+}
+
+export async function fugleWsDisconnect(): Promise<void> {
+  return invoke("fugle_ws_disconnect");
+}
+
+export async function fugleWsSubscribe(
+  channel: string,
+  symbol: string
+): Promise<void> {
+  return invoke("fugle_ws_subscribe", { channel, symbol });
+}
+
+export async function fugleWsUnsubscribe(
+  channel: string,
+  symbol: string
+): Promise<void> {
+  return invoke("fugle_ws_unsubscribe", { channel, symbol });
+}
+
+export async function fugleWsStatus(): Promise<boolean> {
+  return invoke("fugle_ws_status");
 }
