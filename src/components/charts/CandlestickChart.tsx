@@ -42,7 +42,18 @@ export function CandlestickChart({ data, height = 400 }: CandlestickChartProps) 
       },
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: gridColor },
-      timeScale: { borderColor: gridColor },
+      timeScale: {
+        borderColor: gridColor,
+        tickMarkFormatter: (time: string) => {
+          const d = new Date(time);
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${mm}/${dd}`;
+        },
+      },
+      localization: {
+        dateFormat: "yyyy/MM/dd",
+      },
       height,
       autoSize: true,
     });
