@@ -1,4 +1,3 @@
-pub mod agents;
 pub mod anthropic;
 pub mod base_client;
 pub mod catalog;

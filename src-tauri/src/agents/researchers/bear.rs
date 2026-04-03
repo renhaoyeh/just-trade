@@ -1,4 +1,4 @@
-use crate::llm::agents::{AgentCategory, AgentDef};
+use crate::agents::{AgentCategory, AgentDef};
 
 pub const AGENT: AgentDef = AgentDef {
     id: "bear_researcher",

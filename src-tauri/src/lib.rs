@@ -1,6 +1,8 @@
 use tauri::Manager;
 
+pub mod agents;
 mod commands;
+pub mod dataflows;
 mod db;
 pub mod llm;
 mod models;
