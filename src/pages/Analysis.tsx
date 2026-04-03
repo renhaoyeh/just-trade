@@ -366,7 +366,7 @@ export default function Analysis() {
                   </div>
                 ))}
               </div>
-              <Button className="w-full" onClick={handleRun} disabled={running}>
+              <Button className="w-full" onClick={handleRun} disabled={running || (!enableMarket && !enableNews && !enableFundamentals && !enableSocial)}>
                 {running ? t("analysis.running") : t("analysis.run")}
               </Button>
             </CardContent>
