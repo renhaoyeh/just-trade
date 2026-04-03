@@ -10,6 +10,32 @@ pub struct ProviderSettings {
     pub base_url: Option<String>,
 }
 
+/// Analysis pipeline preferences
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnalysisSettings {
+    pub debate_rounds: Option<u32>,
+    pub risk_rounds: Option<u32>,
+    pub cooldown_secs: Option<u64>,
+    pub enable_market_analyst: Option<bool>,
+    pub enable_news_analyst: Option<bool>,
+    pub enable_fundamentals_analyst: Option<bool>,
+    pub enable_social_analyst: Option<bool>,
+}
+
+impl Default for AnalysisSettings {
+    fn default() -> Self {
+        Self {
+            debate_rounds: Some(1),
+            risk_rounds: Some(1),
+            cooldown_secs: Some(15),
+            enable_market_analyst: Some(true),
+            enable_news_analyst: Some(true),
+            enable_fundamentals_analyst: Some(true),
+            enable_social_analyst: Some(false),
+        }
+    }
+}
+
 /// App settings persisted as JSON in the app data directory
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppSettings {
@@ -18,6 +44,7 @@ pub struct AppSettings {
     pub google: Option<ProviderSettings>,
     pub groq: Option<ProviderSettings>,
     pub ollama: Option<ProviderSettings>,
+    pub analysis: Option<AnalysisSettings>,
 }
 
 fn settings_path(app: &AppHandle) -> PathBuf {

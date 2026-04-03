@@ -25,6 +25,7 @@ import {
 import {
   runAnalysis,
   getSettings,
+  saveSettings,
   getAnalysisHistory,
   getAnalysisDetail,
   type PipelineConfig,
@@ -118,10 +119,41 @@ export default function Analysis() {
   const [enableFundamentals, setEnableFundamentals] = useState(true);
   const [enableSocial, setEnableSocial] = useState(false);
 
-  // Load history on mount
+  // Load saved preferences + history on mount
   useEffect(() => {
     getAnalysisHistory(20).then(setHistory).catch(console.error);
+    getSettings().then((s) => {
+      const a = (s as unknown as Record<string, unknown>).analysis as Record<string, unknown> | undefined;
+      if (a) {
+        if (a.debate_rounds != null) setDebateRounds(a.debate_rounds as number);
+        if (a.risk_rounds != null) setRiskRounds(a.risk_rounds as number);
+        if (a.cooldown_secs != null) setCooldownSecs(a.cooldown_secs as number);
+        if (a.enable_market_analyst != null) setEnableMarket(a.enable_market_analyst as boolean);
+        if (a.enable_news_analyst != null) setEnableNews(a.enable_news_analyst as boolean);
+        if (a.enable_fundamentals_analyst != null) setEnableFundamentals(a.enable_fundamentals_analyst as boolean);
+        if (a.enable_social_analyst != null) setEnableSocial(a.enable_social_analyst as boolean);
+      }
+    }).catch(console.error);
   }, []);
+
+  // Auto-save analysis preferences when they change
+  useEffect(() => {
+    getSettings().then((s) => {
+      const updated = {
+        ...s,
+        analysis: {
+          debate_rounds: debateRounds,
+          risk_rounds: riskRounds,
+          cooldown_secs: cooldownSecs,
+          enable_market_analyst: enableMarket,
+          enable_news_analyst: enableNews,
+          enable_fundamentals_analyst: enableFundamentals,
+          enable_social_analyst: enableSocial,
+        },
+      };
+      saveSettings(updated as never);
+    }).catch(console.error);
+  }, [debateRounds, riskRounds, cooldownSecs, enableMarket, enableNews, enableFundamentals, enableSocial]);
 
   // Listen to progress events
   useEffect(() => {
