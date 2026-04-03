@@ -48,20 +48,29 @@ interface StepStatus {
   content?: string;
 }
 
-const ALL_STEPS: { agent: string; phase: string }[] = [
-  { agent: "Market Analyst", phase: "analysts" },
-  { agent: "News Analyst", phase: "analysts" },
-  { agent: "Fundamentals Analyst", phase: "analysts" },
-  { agent: "Social Media Analyst", phase: "analysts" },
-  { agent: "Bull Researcher", phase: "debate" },
-  { agent: "Bear Researcher", phase: "debate" },
-  { agent: "Research Manager", phase: "decision" },
-  { agent: "Trader", phase: "decision" },
-  { agent: "Aggressive Analyst", phase: "risk" },
-  { agent: "Conservative Analyst", phase: "risk" },
-  { agent: "Neutral Analyst", phase: "risk" },
-  { agent: "Portfolio Manager", phase: "final" },
-];
+function buildSteps(
+  market: boolean, news: boolean, fundamentals: boolean, social: boolean,
+  debateRounds: number, riskRounds: number,
+): { agent: string; phase: string }[] {
+  const steps: { agent: string; phase: string }[] = [];
+  if (market) steps.push({ agent: "Market Analyst", phase: "analysts" });
+  if (news) steps.push({ agent: "News Analyst", phase: "analysts" });
+  if (fundamentals) steps.push({ agent: "Fundamentals Analyst", phase: "analysts" });
+  if (social) steps.push({ agent: "Social Media Analyst", phase: "analysts" });
+  for (let r = 0; r < debateRounds; r++) {
+    steps.push({ agent: "Bull Researcher", phase: "debate" });
+    steps.push({ agent: "Bear Researcher", phase: "debate" });
+  }
+  steps.push({ agent: "Research Manager", phase: "decision" });
+  steps.push({ agent: "Trader", phase: "decision" });
+  for (let r = 0; r < riskRounds; r++) {
+    steps.push({ agent: "Aggressive Analyst", phase: "risk" });
+    steps.push({ agent: "Conservative Analyst", phase: "risk" });
+    steps.push({ agent: "Neutral Analyst", phase: "risk" });
+  }
+  steps.push({ agent: "Portfolio Manager", phase: "final" });
+  return steps;
+}
 
 const PHASE_ORDER = ["analysts", "debate", "decision", "risk", "final"];
 const PHASE_LABELS: Record<string, string> = {
@@ -302,9 +311,10 @@ export default function Analysis() {
     return "bg-yellow-500";
   };
 
+  const expectedSteps = buildSteps(enableMarket, enableNews, enableFundamentals, enableSocial, debateRounds, riskRounds);
   const displaySteps = steps.length > 0
     ? steps
-    : ALL_STEPS.map((s) => ({ ...s, status: "pending" as const }));
+    : expectedSteps.map((s) => ({ ...s, status: "pending" as const }));
 
   return (
     <>
