@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 use tauri::State;
 
 use crate::db::stock_prices;
@@ -15,7 +15,7 @@ use crate::services::yahoo::YahooClient;
 /// 4. Return full range from DB
 #[tauri::command]
 pub async fn fetch_stock_history(
-    pool: State<'_, PgPool>,
+    pool: State<'_, SqlitePool>,
     yahoo: State<'_, YahooClient>,
     symbol: String,
     start_date: String,

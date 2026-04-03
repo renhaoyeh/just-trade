@@ -1,20 +1,27 @@
 pub mod stock_prices;
 
-use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::SqlitePool;
+use std::path::Path;
+use std::str::FromStr;
 
-pub async fn create_pool() -> Result<PgPool, sqlx::Error> {
-    dotenvy::dotenv().ok();
+/// Create a SQLite connection pool. The DB file is stored at the given path.
+pub async fn create_pool(db_path: &Path) -> Result<SqlitePool, sqlx::Error> {
+    // Ensure parent directory exists
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
 
-    let database_url =
-        std::env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env or environment");
+    let options = SqliteConnectOptions::from_str(&format!("sqlite:{}", db_path.display()))?
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
 
-    let pool = PgPoolOptions::new()
+    let pool = SqlitePoolOptions::new()
         .max_connections(5)
-        .connect(&database_url)
+        .connect_with(options)
         .await?;
 
-    // Run migrations if the migrations directory exists
+    // Run migrations
     sqlx::migrate!("./migrations").run(&pool).await?;
 
     Ok(pool)

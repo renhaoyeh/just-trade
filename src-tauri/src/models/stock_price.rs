@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -12,7 +12,7 @@ pub struct StockPrice {
     pub close: f64,
     pub volume: i64,
     pub adj_close: Option<f64>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: String,
 }
 
 /// Used when inserting new prices (no id/created_at yet)

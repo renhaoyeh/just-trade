@@ -14,11 +14,13 @@ pub fn run() {
             let yahoo_client = services::yahoo::YahooClient::new();
             app.manage(yahoo_client);
 
-            // Initialize database pool synchronously so it's available for commands
-            let pool = tauri::async_runtime::block_on(db::create_pool())
-                .expect("Failed to connect to database");
+            // Initialize SQLite database in app data directory
+            let app_data = app.path().app_data_dir().expect("Failed to get app data dir");
+            let db_path = app_data.join("just_trade.db");
+            let pool = tauri::async_runtime::block_on(db::create_pool(&db_path))
+                .expect("Failed to initialize database");
             app.manage(pool);
-            println!("Database connected successfully");
+            println!("Database initialized at {}", db_path.display());
 
             Ok(())
         })

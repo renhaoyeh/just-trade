@@ -1,4 +1,4 @@
 CREATE TABLE IF NOT EXISTS health_check (
-    id SERIAL PRIMARY KEY,
-    checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    checked_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

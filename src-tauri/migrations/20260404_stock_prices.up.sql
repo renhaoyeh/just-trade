@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS stock_prices (
-    id BIGSERIAL PRIMARY KEY,
-    symbol VARCHAR(20) NOT NULL,
-    date DATE NOT NULL,
-    open DOUBLE PRECISION NOT NULL,
-    high DOUBLE PRECISION NOT NULL,
-    low DOUBLE PRECISION NOT NULL,
-    close DOUBLE PRECISION NOT NULL,
-    volume BIGINT NOT NULL,
-    adj_close DOUBLE PRECISION,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    date TEXT NOT NULL,
+    open REAL NOT NULL,
+    high REAL NOT NULL,
+    low REAL NOT NULL,
+    close REAL NOT NULL,
+    volume INTEGER NOT NULL,
+    adj_close REAL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (symbol, date)
 );
 
-CREATE INDEX idx_stock_prices_symbol_date ON stock_prices (symbol, date DESC);
+CREATE INDEX IF NOT EXISTS idx_stock_prices_symbol_date ON stock_prices (symbol, date DESC);
