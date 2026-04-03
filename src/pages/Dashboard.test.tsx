@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
@@ -56,7 +56,6 @@ describe("Dashboard - Range Selector", () => {
     );
     expect(historyCall).toBeDefined();
     const args = historyCall![1] as { startDate: string; endDate: string };
-    // 1M = 30 days; verify the date span is roughly 30 days
     const start = new Date(args.startDate);
     const end = new Date(args.endDate);
     const diffDays = Math.round(
@@ -96,10 +95,9 @@ describe("Dashboard - Chart Empty/Loading States", () => {
     expect(screen.getByText(/股價走勢/)).toBeInTheDocument();
   });
 
-  it("shows '無股價資料' when data is empty and not loading", async () => {
+  it("shows empty message when data is empty and not loading", async () => {
     mockedInvoke.mockResolvedValue([]);
     render(<Dashboard />);
-    // Wait for async load to complete
     expect(await screen.findByText("無股價資料")).toBeInTheDocument();
   });
 
@@ -114,10 +112,29 @@ describe("Dashboard - Chart Empty/Loading States", () => {
       return {};
     });
     render(<Dashboard />);
-    // The recharts container should render
     const chartCard = await screen.findByText(/股價走勢/);
     expect(chartCard).toBeInTheDocument();
-    // No "無股價資料" message
     expect(screen.queryByText("無股價資料")).not.toBeInTheDocument();
+  });
+});
+
+describe("Dashboard - i18n", () => {
+  it("renders tab labels from i18n", () => {
+    render(<Dashboard />);
+    expect(screen.getByText("自選清單")).toBeInTheDocument();
+    expect(screen.getByText("歷史股價")).toBeInTheDocument();
+    expect(screen.getByText("相關新聞")).toBeInTheDocument();
+  });
+
+  it("renders search button from i18n", () => {
+    render(<Dashboard />);
+    expect(screen.getByRole("button", { name: "查詢" })).toBeInTheDocument();
+  });
+
+  it("renders search placeholder from i18n", () => {
+    render(<Dashboard />);
+    expect(
+      screen.getByPlaceholderText("輸入股票代號 (如 2330)")
+    ).toBeInTheDocument();
   });
 });

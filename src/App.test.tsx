@@ -5,7 +5,6 @@ import App from "@/App";
 describe("App", () => {
   it("renders the dashboard header", () => {
     render(<App />);
-    // The header contains "Dashboard" text
     const headings = screen.getAllByText("Dashboard");
     expect(headings.length).toBeGreaterThan(0);
   });
@@ -19,7 +18,6 @@ describe("App", () => {
 
   it("renders the default selected symbol", () => {
     render(<App />);
-    // 2330.TW appears in badge and possibly watchlist
     const symbols = screen.getAllByText("2330.TW");
     expect(symbols.length).toBeGreaterThan(0);
   });
