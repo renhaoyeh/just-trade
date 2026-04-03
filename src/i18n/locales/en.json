@@ -212,6 +212,7 @@
     "losingTrades": "Losing Trades",
     "totalCommission": "Total Commission",
     "totalTax": "Total Tax",
+    "chartTitle": "K-Line & Trade Signals",
     "equityCurve": "Equity Curve",
     "tradeHistory": "Trade History",
     "date": "Date",

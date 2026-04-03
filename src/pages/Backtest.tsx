@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BacktestChart } from "@/components/charts/BacktestChart";
 import { runBacktest } from "@/services/stockService";
 import type { StrategyConfig } from "@/services/stockService";
 import type { BacktestResult } from "@/types/stock";
@@ -335,6 +336,35 @@ export default function Backtest() {
               </CardContent>
             </Card>
 
+            {/* K-line charts with buy/sell markers per strategy */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  {t("backtest.chartTitle")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue={compareResults[0]?.strategy}>
+                  <TabsList>
+                    {compareResults.map(({ strategy }) => (
+                      <TabsTrigger key={strategy} value={strategy}>
+                        {t(`backtest.strategies.${strategy}`)}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  {compareResults.map(({ strategy, result: r }) => (
+                    <TabsContent key={strategy} value={strategy}>
+                      <BacktestChart
+                        prices={r.prices}
+                        trades={r.trades}
+                        equityCurve={r.equity_curve}
+                      />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
+
             {/* Overlaid Equity Curves */}
             <Card>
               <CardHeader className="pb-3">
@@ -424,10 +454,14 @@ export default function Backtest() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">{t("backtest.equityCurve")}</CardTitle>
+                <CardTitle className="text-base">{t("backtest.chartTitle")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <SingleEquityChart data={result.equity_curve} initialCapital={result.metrics.initial_capital} />
+                <BacktestChart
+                  prices={result.prices}
+                  trades={result.trades}
+                  equityCurve={result.equity_curve}
+                />
               </CardContent>
             </Card>
 
@@ -629,43 +663,6 @@ function TradeTable({
 function sampleCurve(data: { date: string; equity: number }[], maxPoints = 200) {
   const step = Math.max(1, Math.floor(data.length / maxPoints));
   return data.filter((_, i) => i % step === 0 || i === data.length - 1);
-}
-
-function SingleEquityChart({
-  data,
-  initialCapital,
-}: {
-  data: { date: string; equity: number }[];
-  initialCapital: number;
-}) {
-  if (data.length === 0) return null;
-
-  const sampled = sampleCurve(data);
-  const equities = sampled.map((d) => d.equity);
-  const minE = Math.min(...equities);
-  const maxE = Math.max(...equities);
-  const range = maxE - minE || 1;
-
-  const w = 800;
-  const h = 200;
-  const padY = 10;
-
-  const points = sampled
-    .map((d, i) => {
-      const x = (i / (sampled.length - 1)) * w;
-      const y = padY + (1 - (d.equity - minE) / range) * (h - 2 * padY);
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  const baseY = padY + (1 - (initialCapital - minE) / range) * (h - 2 * padY);
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-48">
-      <line x1={0} y1={baseY} x2={w} y2={baseY} stroke="currentColor" strokeOpacity={0.2} strokeDasharray="4 4" />
-      <polyline points={points} fill="none" stroke="var(--color-primary)" strokeWidth={2} />
-    </svg>
-  );
 }
 
 function CompareEquityChart({

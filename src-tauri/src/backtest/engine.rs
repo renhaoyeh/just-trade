@@ -5,6 +5,17 @@ use crate::models::stock_price::StockPrice;
 
 use super::strategy::Signal;
 
+/// Lightweight price bar for frontend charting (no DB fields).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PriceBar {
+    pub date: NaiveDate,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
+    pub volume: i64,
+}
+
 /// Taiwan stock trading costs.
 const TW_COMMISSION_RATE: f64 = 0.001425; // 0.1425% each way
 const TW_TAX_RATE: f64 = 0.003; // 0.3% on sell
@@ -73,6 +84,7 @@ pub struct BacktestResult {
     pub metrics: BacktestMetrics,
     pub trades: Vec<Trade>,
     pub equity_curve: Vec<EquityPoint>,
+    pub prices: Vec<PriceBar>,
 }
 
 /// Run a backtest given price data and pre-computed signals.
@@ -214,11 +226,24 @@ pub fn run_backtest(
         trading_days: prices.len(),
     };
 
+    let price_bars = prices
+        .iter()
+        .map(|p| PriceBar {
+            date: p.date,
+            open: p.open,
+            high: p.high,
+            low: p.low,
+            close: p.close,
+            volume: p.volume,
+        })
+        .collect();
+
     BacktestResult {
         symbol: symbol.to_string(),
         metrics,
         trades,
         equity_curve,
+        prices: price_bars,
     }
 }
 

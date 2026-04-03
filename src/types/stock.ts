@@ -141,9 +141,19 @@ export interface BacktestMetrics {
   trading_days: number;
 }
 
+export interface PriceBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export interface BacktestResult {
   symbol: string;
   metrics: BacktestMetrics;
   trades: BacktestTrade[];
   equity_curve: EquityPoint[];
+  prices: PriceBar[];
 }

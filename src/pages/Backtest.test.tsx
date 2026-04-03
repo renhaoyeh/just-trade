@@ -5,6 +5,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { renderWithProviders } from "@/tests/render-helpers";
 import Backtest from "./Backtest";
 
+vi.mock("@/components/charts/BacktestChart", () => ({
+  BacktestChart: () => <div data-testid="backtest-chart" />,
+}));
+
 const mockedInvoke = vi.mocked(invoke);
 
 function renderBacktest() {
@@ -52,6 +56,11 @@ const mockBacktestResult = {
     { date: "2023-01-01", equity: 1000000, cash: 1000000, position_value: 0 },
     { date: "2023-06-01", equity: 1025000, cash: 1025000, position_value: 0 },
     { date: "2024-12-31", equity: 1050000, cash: 1050000, position_value: 0 },
+  ],
+  prices: [
+    { date: "2023-01-01", open: 500, high: 510, low: 495, close: 505, volume: 10000 },
+    { date: "2023-06-01", open: 530, high: 540, low: 525, close: 535, volume: 12000 },
+    { date: "2024-12-31", open: 550, high: 560, low: 545, close: 555, volume: 11000 },
   ],
 };
 

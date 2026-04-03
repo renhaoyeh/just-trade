@@ -212,6 +212,7 @@
     "losingTrades": "虧損次數",
     "totalCommission": "總手續費",
     "totalTax": "總交易稅",
+    "chartTitle": "K 線走勢 & 買賣訊號",
     "equityCurve": "權益曲線",
     "tradeHistory": "交易紀錄",
     "date": "日期",
