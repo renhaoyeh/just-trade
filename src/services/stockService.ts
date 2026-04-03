@@ -167,7 +167,8 @@ export type StrategyConfig =
   | { type: "SmaCrossover"; short_period: number; long_period: number }
   | { type: "Rsi"; period: number; overbought: number; oversold: number }
   | { type: "BollingerBands"; period: number; std_dev: number }
-  | { type: "Macd"; fast_period: number; slow_period: number; signal_period: number };
+  | { type: "Macd"; fast_period: number; slow_period: number; signal_period: number }
+  | { type: "Dca"; amount: number; interval_days: number };
 
 export interface RunBacktestParams {
   symbol: string;

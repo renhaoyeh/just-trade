@@ -86,6 +86,7 @@ describe("Backtest Page", () => {
     expect(screen.getByRole("button", { name: "RSI" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "布林通道" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "MACD" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "定期定額" })).toBeInTheDocument();
   });
 
   it("switches strategy params when clicking a different strategy", async () => {
@@ -106,6 +107,11 @@ describe("Backtest Page", () => {
     // Click Bollinger Bands
     await userEvent.click(screen.getByRole("button", { name: "布林通道" }));
     expect(screen.getByDisplayValue("2")).toBeInTheDocument(); // std_dev
+
+    // Click DCA
+    await userEvent.click(screen.getByRole("button", { name: "定期定額" }));
+    expect(screen.getByDisplayValue("10000")).toBeInTheDocument(); // amount
+    expect(screen.getByDisplayValue("22")).toBeInTheDocument(); // interval
   });
 
   it("calls run_backtest with SMA strategy and displays results", async () => {
@@ -187,7 +193,7 @@ describe("Backtest Page", () => {
     await userEvent.click(screen.getByRole("button", { name: "全部比較" }));
 
     await waitFor(() => {
-      expect(mockedInvoke).toHaveBeenCalledTimes(4);
+      expect(mockedInvoke).toHaveBeenCalledTimes(5);
     });
 
     // Comparison table should appear

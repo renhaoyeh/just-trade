@@ -31,6 +31,7 @@ const STRATEGY_TYPES = [
   "Rsi",
   "BollingerBands",
   "Macd",
+  "Dca",
 ] as const;
 type StrategyType = (typeof STRATEGY_TYPES)[number];
 
@@ -39,6 +40,7 @@ const STRATEGY_COLORS: Record<StrategyType, string> = {
   Rsi: "#f59e0b",          // amber
   BollingerBands: "#10b981", // emerald
   Macd: "#8b5cf6",          // violet
+  Dca: "#ec4899",           // pink
 };
 
 function defaultStrategyConfig(type: StrategyType): StrategyConfig {
@@ -51,6 +53,8 @@ function defaultStrategyConfig(type: StrategyType): StrategyConfig {
       return { type: "BollingerBands", period: 20, std_dev: 2.0 };
     case "Macd":
       return { type: "Macd", fast_period: 12, slow_period: 26, signal_period: 9 };
+    case "Dca":
+      return { type: "Dca", amount: 10000, interval_days: 22 };
   }
 }
 
@@ -522,6 +526,13 @@ function StrategyParams({
           <ParamInput label={t("backtest.params.fastPeriod")} value={config.fast_period} onChange={(v) => onUpdate("fast_period", v)} min={2} />
           <ParamInput label={t("backtest.params.slowPeriod")} value={config.slow_period} onChange={(v) => onUpdate("slow_period", v)} min={2} />
           <ParamInput label={t("backtest.params.signalPeriod")} value={config.signal_period} onChange={(v) => onUpdate("signal_period", v)} min={2} />
+        </>
+      );
+    case "Dca":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.amount")} value={config.amount} onChange={(v) => onUpdate("amount", v)} min={1000} step={1000} />
+          <ParamInput label={t("backtest.params.intervalDays")} value={config.interval_days} onChange={(v) => onUpdate("interval_days", v)} min={1} />
         </>
       );
   }

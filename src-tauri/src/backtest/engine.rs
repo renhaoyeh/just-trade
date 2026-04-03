@@ -128,6 +128,31 @@ pub fn run_backtest(
                     });
                 }
             }
+            Signal::BuyFixed(budget) => {
+                // DCA: buy a fixed dollar amount worth of shares
+                let spend = budget.min(cash);
+                let buy_shares = (spend / (price.close * (1.0 + config.commission_rate))) as i64;
+                if buy_shares > 0 {
+                    let amount = price.close * buy_shares as f64;
+                    let commission = (amount * config.commission_rate).max(20.0);
+                    total_commission += commission;
+                    cash -= amount + commission;
+                    // Weighted average cost
+                    let total_cost = avg_cost * shares as f64 + price.close * buy_shares as f64;
+                    shares += buy_shares;
+                    avg_cost = total_cost / shares as f64;
+
+                    trades.push(Trade {
+                        date: price.date,
+                        action: "buy".into(),
+                        price: price.close,
+                        shares: buy_shares,
+                        cost: commission,
+                        pnl: 0.0,
+                        balance: cash,
+                    });
+                }
+            }
             Signal::Sell if shares > 0 => {
                 let amount = price.close * shares as f64;
                 let commission = (amount * config.commission_rate).max(20.0);
@@ -340,5 +365,31 @@ mod tests {
         let dd = compute_max_drawdown(&curve);
         // Peak = 120, trough = 90 → dd = 25%
         assert!((dd - 25.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_dca_multiple_buys() {
+        // 5 days, DCA buys on day 0 and day 2 (interval=2)
+        let prices = make_prices(&[100.0, 105.0, 110.0, 108.0, 115.0]);
+        let signals = vec![
+            Signal::BuyFixed(50000.0),
+            Signal::Hold,
+            Signal::BuyFixed(50000.0),
+            Signal::Hold,
+            Signal::Hold,
+        ];
+        let config = BacktestConfig {
+            initial_capital: 200_000.0,
+            ..Default::default()
+        };
+
+        let result = run_backtest("TEST", &prices, &signals, &config);
+        // 2 DCA buys + 1 forced sell
+        let buy_count = result.trades.iter().filter(|t| t.action == "buy").count();
+        let sell_count = result.trades.iter().filter(|t| t.action == "sell").count();
+        assert_eq!(buy_count, 2);
+        assert_eq!(sell_count, 1);
+        // Should have accumulated shares from both buys
+        assert!(result.trades.last().unwrap().shares > result.trades[0].shares);
     }
 }

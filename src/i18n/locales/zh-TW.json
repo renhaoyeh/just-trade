@@ -184,7 +184,8 @@
       "SmaCrossover": "均線交叉",
       "Rsi": "RSI",
       "BollingerBands": "布林通道",
-      "Macd": "MACD"
+      "Macd": "MACD",
+      "Dca": "定期定額"
     },
     "params": {
       "period": "週期",
@@ -193,7 +194,9 @@
       "stdDev": "標準差倍數",
       "fastPeriod": "快線週期",
       "slowPeriod": "慢線週期",
-      "signalPeriod": "訊號線週期"
+      "signalPeriod": "訊號線週期",
+      "amount": "每期金額",
+      "intervalDays": "間隔交易日"
     },
     "run": "開始回測",
     "running": "回測中...",

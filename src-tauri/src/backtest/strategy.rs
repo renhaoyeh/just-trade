@@ -3,9 +3,11 @@ use serde::{Deserialize, Serialize};
 use crate::models::stock_price::StockPrice;
 
 /// A trading signal produced by a strategy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Signal {
     Buy,
+    /// Buy a fixed dollar amount (for DCA).
+    BuyFixed(f64),
     Sell,
     Hold,
 }
@@ -21,6 +23,7 @@ pub enum StrategyConfig {
     Rsi(RsiConfig),
     BollingerBands(BollingerBandsConfig),
     Macd(MacdConfig),
+    Dca(DcaConfig),
 }
 
 /// Dispatch signals based on the chosen strategy.
@@ -30,6 +33,7 @@ pub fn generate_signals(prices: &[StockPrice], config: &StrategyConfig) -> Vec<S
         StrategyConfig::Rsi(c) => rsi_signals(prices, c),
         StrategyConfig::BollingerBands(c) => bollinger_bands_signals(prices, c),
         StrategyConfig::Macd(c) => macd_signals(prices, c),
+        StrategyConfig::Dca(c) => dca_signals(prices, c),
     }
 }
 
@@ -40,6 +44,7 @@ pub fn min_data_points(config: &StrategyConfig) -> usize {
         StrategyConfig::Rsi(c) => c.period + 1,
         StrategyConfig::BollingerBands(c) => c.period,
         StrategyConfig::Macd(c) => c.slow_period + c.signal_period,
+        StrategyConfig::Dca(_) => 1,
     }
 }
 
@@ -367,6 +372,40 @@ fn compute_ema(data: &[f64], period: usize) -> Vec<Option<f64>> {
 }
 
 // ===========================================================================
+// 5. DCA (Dollar-Cost Averaging / 定期定額)
+// ===========================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DcaConfig {
+    /// Fixed amount to invest each time (TWD).
+    pub amount: f64,
+    /// Buy every N trading days.
+    pub interval_days: usize,
+}
+
+impl Default for DcaConfig {
+    fn default() -> Self {
+        Self {
+            amount: 10000.0,
+            interval_days: 22, // roughly monthly
+        }
+    }
+}
+
+/// DCA strategy: buy a fixed dollar amount every N trading days. Never sell.
+pub fn dca_signals(prices: &[StockPrice], config: &DcaConfig) -> Vec<Signal> {
+    let n = prices.len();
+    let mut signals = vec![Signal::Hold; n];
+    let interval = config.interval_days.max(1);
+
+    for i in (0..n).step_by(interval) {
+        signals[i] = Signal::BuyFixed(config.amount);
+    }
+
+    signals
+}
+
+// ===========================================================================
 // Shared helpers
 // ===========================================================================
 
@@ -579,5 +618,47 @@ mod tests {
         let macd_config = StrategyConfig::Macd(MacdConfig::default());
         let macd_signals = generate_signals(&prices, &macd_config);
         assert_eq!(macd_signals.len(), 30);
+
+        let dca_config = StrategyConfig::Dca(DcaConfig::default());
+        let dca_signals = generate_signals(&prices, &dca_config);
+        assert_eq!(dca_signals.len(), 30);
+    }
+
+    // -- DCA --
+
+    #[test]
+    fn test_dca_signals_interval() {
+        let prices = make_prices(&[100.0; 50]);
+        let config = DcaConfig {
+            amount: 10000.0,
+            interval_days: 10,
+        };
+        let signals = dca_signals(&prices, &config);
+        assert_eq!(signals.len(), 50);
+
+        // Should buy at index 0, 10, 20, 30, 40
+        let buy_indices: Vec<usize> = signals
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| matches!(s, Signal::BuyFixed(_)))
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(buy_indices, vec![0, 10, 20, 30, 40]);
+    }
+
+    #[test]
+    fn test_dca_buy_fixed_amount() {
+        let prices = make_prices(&[100.0; 50]);
+        let config = DcaConfig {
+            amount: 5000.0,
+            interval_days: 10,
+        };
+        let signals = dca_signals(&prices, &config);
+
+        if let Signal::BuyFixed(amt) = signals[0] {
+            assert!((amt - 5000.0).abs() < 1e-9);
+        } else {
+            panic!("Expected BuyFixed at index 0");
+        }
     }
 }

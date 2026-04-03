@@ -184,7 +184,8 @@
       "SmaCrossover": "SMA Crossover",
       "Rsi": "RSI",
       "BollingerBands": "Bollinger Bands",
-      "Macd": "MACD"
+      "Macd": "MACD",
+      "Dca": "DCA"
     },
     "params": {
       "period": "Period",
@@ -193,7 +194,9 @@
       "stdDev": "Std Dev Multiplier",
       "fastPeriod": "Fast Period",
       "slowPeriod": "Slow Period",
-      "signalPeriod": "Signal Period"
+      "signalPeriod": "Signal Period",
+      "amount": "Amount per Period",
+      "intervalDays": "Interval (Trading Days)"
     },
     "run": "Run Backtest",
     "running": "Running...",
