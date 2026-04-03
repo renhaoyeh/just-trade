@@ -61,8 +61,26 @@ const ALL_STEPS: { agent: string; phase: string }[] = [
   { agent: "Portfolio Manager", phase: "final" },
 ];
 
+const PHASE_ORDER = ["analysts", "debate", "decision", "risk", "final"];
+const PHASE_LABELS: Record<string, string> = {
+  analysts: "analysis.phaseAnalysts",
+  debate: "analysis.phaseDebate",
+  decision: "analysis.phaseDecision",
+  risk: "analysis.phaseRisk",
+  final: "analysis.phaseFinal",
+};
+
 function stepKey(s: { phase: string; agent: string }) {
   return `${s.phase}-${s.agent}`;
+}
+
+function groupByPhase(steps: StepStatus[]): Record<string, StepStatus[]> {
+  const groups: Record<string, StepStatus[]> = {};
+  for (const step of steps) {
+    if (!groups[step.phase]) groups[step.phase] = [];
+    groups[step.phase].push(step);
+  }
+  return groups;
 }
 
 export default function Analysis() {
@@ -324,9 +342,9 @@ export default function Analysis() {
           )}
         </div>
 
-        {/* Right: Card stack */}
+        {/* Right: Phase-grouped grid */}
         <ScrollArea className="flex-1">
-          <div className="space-y-3 pr-3">
+          <div className="space-y-6 pr-3">
             {/* Signal */}
             {signal && (
               <Card>
@@ -344,61 +362,72 @@ export default function Analysis() {
               </Card>
             )}
 
-            {/* Agent cards */}
-            {displaySteps.map((step, i) => {
-              const key = stepKey(step);
-              const isOpen = expandedCards.has(key);
+            {/* Grouped by phase */}
+            {(() => {
+              const grouped = groupByPhase(displaySteps);
+              return PHASE_ORDER.filter((phase) => grouped[phase]).map((phase) => (
+                <div key={phase} className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t(PHASE_LABELS[phase])}
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {grouped[phase].map((step, i) => {
+                      const key = stepKey(step);
+                      const isOpen = expandedCards.has(key);
 
-              return (
-                <Card
-                  key={`${key}-${i}`}
-                  className={
-                    step.status === "running" ? "ring-2 ring-primary/50" :
-                    step.status === "error" ? "ring-2 ring-destructive/50" : ""
-                  }
-                >
-                  <Collapsible open={isOpen} onOpenChange={() => toggleCard(key)}>
-                    <CollapsibleTrigger asChild>
-                      <CardHeader className="cursor-pointer py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">
-                            {step.status === "running" ? "⏳" :
-                             step.status === "done" ? "✅" :
-                             step.status === "error" ? "❌" : "⬜"}
-                          </span>
-                          <span className="text-sm font-medium flex-1">{step.agent}</span>
-                          <Badge variant="outline" className="text-xs">{step.phase}</Badge>
-                          {step.statusMessage && step.status === "running" && (
-                            <span className="text-xs text-muted-foreground">{step.statusMessage}</span>
-                          )}
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="pt-0">
-                        {step.status === "running" && (
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-4 w-5/6" />
-                          </div>
-                        )}
-                        {step.content && (
-                          <div className="max-h-80 overflow-y-auto">
-                            <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
-                              {step.content}
-                            </pre>
-                          </div>
-                        )}
-                        {step.status === "error" && step.statusMessage && (
-                          <p className="text-xs text-destructive">{step.statusMessage}</p>
-                        )}
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </Card>
-              );
-            })}
+                      return (
+                        <Card
+                          key={`${key}-${i}`}
+                          className={
+                            step.status === "running" ? "ring-2 ring-primary/50 animate-pulse" :
+                            step.status === "error" ? "ring-2 ring-destructive/50" : ""
+                          }
+                        >
+                          <Collapsible open={isOpen} onOpenChange={() => toggleCard(key)}>
+                            <CollapsibleTrigger asChild>
+                              <CardHeader className="cursor-pointer py-3">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm ${step.status === "running" ? "animate-pulse" : ""}`}>
+                                    {step.status === "running" ? "⏳" :
+                                     step.status === "done" ? "✅" :
+                                     step.status === "error" ? "❌" : "⬜"}
+                                  </span>
+                                  <span className="text-sm font-medium flex-1">{step.agent}</span>
+                                  {step.statusMessage && step.status === "running" && (
+                                    <span className="text-xs text-muted-foreground">{step.statusMessage}</span>
+                                  )}
+                                </div>
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <CardContent className="pt-0">
+                                {step.status === "running" && (
+                                  <div className="space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-4 w-5/6" />
+                                  </div>
+                                )}
+                                {step.content && (
+                                  <div className="max-h-60 overflow-y-auto">
+                                    <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
+                                      {step.content}
+                                    </pre>
+                                  </div>
+                                )}
+                                {step.status === "error" && step.statusMessage && (
+                                  <p className="text-xs text-destructive">{step.statusMessage}</p>
+                                )}
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              ));
+            })()}
             <div ref={bottomRef} />
           </div>
         </ScrollArea>

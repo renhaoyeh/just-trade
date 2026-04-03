@@ -115,6 +115,11 @@
     "run": "Run Analysis",
     "running": "Analyzing...",
     "progress": "Progress",
-    "history": "History"
+    "history": "History",
+    "phaseAnalysts": "Analysts",
+    "phaseDebate": "Bull vs Bear Debate",
+    "phaseDecision": "Investment Decision",
+    "phaseRisk": "Risk Assessment",
+    "phaseFinal": "Final Decision"
   }
 }

@@ -115,6 +115,11 @@
     "run": "開始分析",
     "running": "分析中...",
     "progress": "執行進度",
-    "history": "歷史紀錄"
+    "history": "歷史紀錄",
+    "phaseAnalysts": "分析師",
+    "phaseDebate": "多空辯論",
+    "phaseDecision": "投資決策",
+    "phaseRisk": "風險評估",
+    "phaseFinal": "最終決策"
   }
 }
