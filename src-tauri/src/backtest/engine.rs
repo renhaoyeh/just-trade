@@ -107,11 +107,9 @@ pub fn run_backtest(
     for (i, (price, signal)) in prices.iter().zip(signals.iter()).enumerate() {
         match signal {
             Signal::Buy if shares == 0 => {
-                // Buy as many shares as we can afford (台股 1 張 = 1000 股)
-                let lot_size = 1000_i64;
-                let max_lots = (cash / (price.close * lot_size as f64 * (1.0 + config.commission_rate))) as i64;
-                if max_lots > 0 {
-                    let buy_shares = max_lots * lot_size;
+                // Buy as many shares as we can afford (支援零股)
+                let buy_shares = (cash / (price.close * (1.0 + config.commission_rate))) as i64;
+                if buy_shares > 0 {
                     let amount = price.close * buy_shares as f64;
                     let commission = (amount * config.commission_rate).max(20.0);
                     total_commission += commission;
