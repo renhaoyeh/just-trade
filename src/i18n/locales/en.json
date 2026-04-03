@@ -11,6 +11,7 @@
     "history": "History",
     "sectors": "Sectors",
     "analysis": "AI Analysis",
+    "analysisHistory": "Analysis History",
     "watchlist": "Watchlist",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -121,5 +122,10 @@
     "phaseDecision": "Investment Decision",
     "phaseRisk": "Risk Assessment",
     "phaseFinal": "Final Decision"
+  },
+  "analysisHistory": {
+    "title": "Analysis History",
+    "empty": "No analysis records yet",
+    "backToList": "Back to list"
   }
 }

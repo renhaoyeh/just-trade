@@ -11,6 +11,7 @@
     "history": "歷史紀錄",
     "sectors": "產業類股",
     "analysis": "AI 分析",
+    "analysisHistory": "分析紀錄",
     "watchlist": "自選清單",
     "settings": "設定",
     "signOut": "登出",
@@ -121,5 +122,10 @@
     "phaseDecision": "投資決策",
     "phaseRisk": "風險評估",
     "phaseFinal": "最終決策"
+  },
+  "analysisHistory": {
+    "title": "分析紀錄",
+    "empty": "尚無分析紀錄",
+    "backToList": "返回列表"
   }
 }
