@@ -3,20 +3,31 @@ import { describe, it, expect } from "vitest";
 import App from "@/App";
 
 describe("App", () => {
-  it("renders the dashboard heading", () => {
+  it("renders the dashboard header", () => {
     render(<App />);
-    expect(screen.getByText("Just Trade")).toBeInTheDocument();
+    // The header contains "Dashboard" text
+    const headings = screen.getAllByText("Dashboard");
+    expect(headings.length).toBeGreaterThan(0);
   });
 
-  it("renders portfolio stat cards", () => {
+  it("renders the stock search input", () => {
     render(<App />);
-    expect(screen.getByText("Total Portfolio")).toBeInTheDocument();
-    expect(screen.getByText("$35,448.90")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("輸入股票代號 (如 2330)")
+    ).toBeInTheDocument();
   });
 
-  it("renders portfolio holdings table", () => {
+  it("renders the default selected symbol", () => {
     render(<App />);
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("NVDA")).toBeInTheDocument();
+    // 2330.TW appears in badge and possibly watchlist
+    const symbols = screen.getAllByText("2330.TW");
+    expect(symbols.length).toBeGreaterThan(0);
+  });
+
+  it("renders tab triggers", () => {
+    render(<App />);
+    expect(screen.getByText("自選清單")).toBeInTheDocument();
+    expect(screen.getByText("歷史股價")).toBeInTheDocument();
+    expect(screen.getByText("相關新聞")).toBeInTheDocument();
   });
 });
