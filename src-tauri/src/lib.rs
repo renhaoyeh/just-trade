@@ -42,6 +42,8 @@ pub fn run() {
             commands::llm::llm_models,
             commands::llm::llm_agents,
             commands::llm::llm_agent_chat,
+            commands::settings::get_settings,
+            commands::settings::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

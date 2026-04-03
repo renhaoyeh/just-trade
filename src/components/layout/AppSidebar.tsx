@@ -2,6 +2,7 @@ import {
   ChartLine,
   Lightning,
   Buildings,
+  GearSix,
 } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -21,6 +22,7 @@ import { useNavigate, useLocation } from "react-router";
 const mainNav = [
   { titleKey: "nav.dashboard", icon: ChartLine, path: "/" },
   { titleKey: "nav.sectors", icon: Buildings, path: "/sectors" },
+  { titleKey: "nav.settings", icon: GearSix, path: "/settings" },
 ];
 
 export function AppSidebar() {

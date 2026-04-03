@@ -10,6 +10,7 @@
     "trade": "交易",
     "history": "歷史紀錄",
     "sectors": "產業類股",
+    "settings": "設定",
     "watchlist": "自選清單",
     "settings": "設定",
     "signOut": "登出",
@@ -84,5 +85,19 @@
     "volume": "成交量",
     "loading": "載入中...",
     "empty": "此產業無上市股票"
+  },
+  "settings": {
+    "title": "設定",
+    "llmProvider": "AI 模型設定",
+    "llmProviderDesc": "選擇要使用的 AI 模型提供者與模型",
+    "provider": "提供者",
+    "model": "模型",
+    "selectModel": "選擇模型",
+    "modelPlaceholder": "輸入模型名稱",
+    "apiKeys": "API 金鑰",
+    "apiKeysDesc": "輸入對應提供者的 API 金鑰",
+    "save": "儲存",
+    "saving": "儲存中...",
+    "saved": "已儲存"
   }
 }

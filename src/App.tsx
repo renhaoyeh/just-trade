@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Sectors from "@/pages/Sectors";
 import SectorDetail from "@/pages/SectorDetail";
+import Settings from "@/pages/Settings";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/sectors" element={<Sectors />} />
           <Route path="/sectors/:sectorName" element={<SectorDetail />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

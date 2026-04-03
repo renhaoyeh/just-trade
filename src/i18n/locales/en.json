@@ -10,6 +10,7 @@
     "trade": "Trade",
     "history": "History",
     "sectors": "Sectors",
+    "settings": "Settings",
     "watchlist": "Watchlist",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -84,5 +85,19 @@
     "volume": "Volume",
     "loading": "Loading...",
     "empty": "No stocks in this sector"
+  },
+  "settings": {
+    "title": "Settings",
+    "llmProvider": "AI Model Settings",
+    "llmProviderDesc": "Choose your AI model provider and model",
+    "provider": "Provider",
+    "model": "Model",
+    "selectModel": "Select a model",
+    "modelPlaceholder": "Enter model name",
+    "apiKeys": "API Keys",
+    "apiKeysDesc": "Enter the API key for the selected provider",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved"
   }
 }

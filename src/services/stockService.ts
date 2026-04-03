@@ -38,3 +38,28 @@ export async function getSectors(): Promise<Sector[]> {
 export async function getSectorStocks(sector: string): Promise<SectorStock[]> {
   return invoke("get_sector_stocks", { sector });
 }
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+export interface AppSettings {
+  llm_provider: string | null;
+  llm_model: string | null;
+  openai_api_key: string | null;
+  anthropic_api_key: string | null;
+  google_api_key: string | null;
+  ollama_base_url: string | null;
+}
+
+export async function getSettings(): Promise<AppSettings> {
+  return invoke("get_settings");
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  return invoke("save_settings", { settings });
+}
+
+export async function getLlmModels(provider: string): Promise<string[]> {
+  return invoke("llm_models", { provider });
+}
