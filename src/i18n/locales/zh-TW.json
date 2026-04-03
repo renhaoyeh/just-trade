@@ -1,0 +1,70 @@
+{
+  "app": {
+    "name": "Just Trade",
+    "version": "v0.1.0"
+  },
+  "nav": {
+    "navigation": "Navigation",
+    "dashboard": "Dashboard",
+    "portfolio": "Portfolio",
+    "trade": "Trade",
+    "history": "History",
+    "watchlist": "Watchlist",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "new": "New",
+    "user": "User",
+    "traderName": "Trader",
+    "traderEmail": "trader@just.trade"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "searchPlaceholder": "輸入股票代號 (如 2330)",
+    "search": "查詢",
+    "loading": "載入中...",
+    "na": "N/A",
+    "noData": "No data",
+    "weekHigh52": "52 Week High",
+    "weekLow52": "52 Week Low",
+    "peRatio": "P/E: {{value}}",
+    "marketCap": "Market Cap",
+    "dividendYield": "殖利率: {{value}}%"
+  },
+  "chart": {
+    "title": "{{symbol}} 股價走勢",
+    "description": "{{range}}日 K 線收盤價",
+    "loading": "載入中...",
+    "empty": "無股價資料",
+    "range": {
+      "1M": "近 1 個月",
+      "3M": "近 3 個月",
+      "6M": "近 6 個月",
+      "1Y": "近 1 年",
+      "5Y": "近 5 年"
+    }
+  },
+  "tabs": {
+    "watchlist": "自選清單",
+    "history": "歷史股價",
+    "news": "相關新聞"
+  },
+  "history": {
+    "title": "{{symbol}} 歷史股價",
+    "date": "日期",
+    "open": "開盤",
+    "high": "最高",
+    "low": "最低",
+    "close": "收盤",
+    "volume": "成交量"
+  },
+  "news": {
+    "title": "{{symbol}} 相關新聞",
+    "empty": "暫無新聞"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "app": {
+    "name": "Just Trade",
+    "version": "v0.1.0"
+  },
+  "nav": {
+    "navigation": "Navigation",
+    "dashboard": "Dashboard",
+    "portfolio": "Portfolio",
+    "trade": "Trade",
+    "history": "History",
+    "watchlist": "Watchlist",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "new": "New",
+    "user": "User",
+    "traderName": "Trader",
+    "traderEmail": "trader@just.trade"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "searchPlaceholder": "Enter stock symbol (e.g. 2330)",
+    "search": "Search",
+    "loading": "Loading...",
+    "na": "N/A",
+    "noData": "No data",
+    "weekHigh52": "52 Week High",
+    "weekLow52": "52 Week Low",
+    "peRatio": "P/E: {{value}}",
+    "marketCap": "Market Cap",
+    "dividendYield": "Div Yield: {{value}}%"
+  },
+  "chart": {
+    "title": "{{symbol}} Price Trend",
+    "description": "{{range}} Daily Closing Price",
+    "loading": "Loading...",
+    "empty": "No price data",
+    "range": {
+      "1M": "Past 1 Month",
+      "3M": "Past 3 Months",
+      "6M": "Past 6 Months",
+      "1Y": "Past 1 Year",
+      "5Y": "Past 5 Years"
+    }
+  },
+  "tabs": {
+    "watchlist": "Watchlist",
+    "history": "Price History",
+    "news": "News"
+  },
+  "history": {
+    "title": "{{symbol}} Price History",
+    "date": "Date",
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "volume": "Volume"
+  },
+  "news": {
+    "title": "{{symbol}} News",
+    "empty": "No news available"
+  }
+}
