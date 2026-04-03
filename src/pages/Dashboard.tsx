@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -16,36 +17,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-const portfolioData = [
-  { symbol: "AAPL", name: "Apple Inc.", price: 198.45, change: +2.34, changePercent: +1.19, shares: 50, value: 9922.5 },
-  { symbol: "TSLA", name: "Tesla Inc.", price: 248.12, change: -5.67, changePercent: -2.23, shares: 20, value: 4962.4 },
-  { symbol: "NVDA", name: "NVIDIA Corp.", price: 875.30, change: +12.45, changePercent: +1.44, shares: 10, value: 8753.0 },
-  { symbol: "MSFT", name: "Microsoft Corp.", price: 415.60, change: +3.21, changePercent: +0.78, shares: 15, value: 6234.0 },
-  { symbol: "AMZN", name: "Amazon.com Inc.", price: 185.90, change: -1.12, changePercent: -0.60, shares: 30, value: 5577.0 },
-];
+import type { StockPrice, StockInfo, StockNews } from "@/types/stock";
+import {
+  fetchStockHistory,
+  getStockInfo,
+  fetchStockNews,
+} from "@/services/stockService";
 
-const recentTrades = [
-  { id: 1, symbol: "AAPL", side: "BUY", qty: 10, price: 196.11, time: "14:32:05", status: "filled" },
-  { id: 2, symbol: "TSLA", side: "SELL", qty: 5, price: 253.79, time: "13:15:22", status: "filled" },
-  { id: 3, symbol: "NVDA", side: "BUY", qty: 3, price: 862.85, time: "11:45:10", status: "filled" },
-  { id: 4, symbol: "AMZN", side: "BUY", qty: 15, price: 187.02, time: "10:30:44", status: "partial" },
-  { id: 5, symbol: "MSFT", side: "SELL", qty: 8, price: 412.39, time: "09:31:02", status: "pending" },
-];
+// Default Taiwan stock watchlist
+const DEFAULT_WATCHLIST = ["2330.TW", "2317.TW", "2454.TW", "2308.TW"];
 
-const watchlist = [
-  { symbol: "META", price: 505.75, change: +3.82 },
-  { symbol: "GOOG", price: 176.40, change: -0.95 },
-  { symbol: "AMD", price: 162.55, change: +5.12 },
-  { symbol: "NFLX", price: 628.90, change: +8.44 },
-];
-
-function StatCard({ title, value, description, trend }: {
+function StatCard({
+  title,
+  value,
+  description,
+  trend,
+}: {
   title: string;
   value: string;
   description: string;
@@ -55,12 +62,18 @@ function StatCard({ title, value, description, trend }: {
     <Card>
       <CardHeader>
         <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-2xl tabular-nums">
-          {value}
-        </CardTitle>
+        <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>
       </CardHeader>
       <CardContent>
-        <span className={trend === "up" ? "text-emerald-500" : trend === "down" ? "text-red-500" : "text-muted-foreground"}>
+        <span
+          className={
+            trend === "up"
+              ? "text-emerald-500"
+              : trend === "down"
+                ? "text-red-500"
+                : "text-muted-foreground"
+          }
+        >
           {description}
         </span>
       </CardContent>
@@ -68,7 +81,98 @@ function StatCard({ title, value, description, trend }: {
   );
 }
 
+function formatDate(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split("T")[0];
+}
+
 export default function Dashboard() {
+  const [searchSymbol, setSearchSymbol] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("2330.TW");
+  const [priceHistory, setPriceHistory] = useState<StockPrice[]>([]);
+  const [stockInfo, setStockInfo] = useState<StockInfo | null>(null);
+  const [news, setNews] = useState<StockNews[]>([]);
+  const [watchlistData, setWatchlistData] = useState<
+    { symbol: string; info: StockInfo | null; loading: boolean }[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStockData = useCallback(async (symbol: string) => {
+    setLoading(true);
+    setError(null);
+
+    const endDate = formatDate(0);
+    const startDate = formatDate(90); // 3 months
+
+    try {
+      const [history, info, stockNews] = await Promise.all([
+        fetchStockHistory(symbol, startDate, endDate),
+        getStockInfo(symbol).catch(() => null),
+        fetchStockNews(symbol, 5).catch(() => []),
+      ]);
+      setPriceHistory(history);
+      setStockInfo(info);
+      setNews(stockNews);
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadWatchlist = useCallback(async () => {
+    setWatchlistData(
+      DEFAULT_WATCHLIST.map((s) => ({ symbol: s, info: null, loading: true }))
+    );
+
+    for (const symbol of DEFAULT_WATCHLIST) {
+      try {
+        const info = await getStockInfo(symbol);
+        setWatchlistData((prev) =>
+          prev.map((item) =>
+            item.symbol === symbol ? { ...item, info, loading: false } : item
+          )
+        );
+      } catch {
+        setWatchlistData((prev) =>
+          prev.map((item) =>
+            item.symbol === symbol ? { ...item, loading: false } : item
+          )
+        );
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStockData(selectedSymbol);
+    loadWatchlist();
+  }, [loadStockData, loadWatchlist, selectedSymbol]);
+
+  const handleSearch = () => {
+    const symbol = searchSymbol.trim().toUpperCase();
+    if (!symbol) return;
+    // Auto-append .TW if no suffix
+    const fullSymbol =
+      symbol.includes(".") ? symbol : `${symbol}.TW`;
+    setSelectedSymbol(fullSymbol);
+    setSearchSymbol("");
+  };
+
+  // Chart data
+  const chartData = priceHistory.map((p) => ({
+    date: p.date,
+    close: p.close,
+    volume: p.volume,
+  }));
+
+  // Latest price info
+  const latestPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : null;
+  const prevPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : null;
+  const priceChange = latestPrice && prevPrice ? latestPrice.close - prevPrice.close : 0;
+  const priceChangePercent = prevPrice ? (priceChange / prevPrice.close) * 100 : 0;
+
   return (
     <TooltipProvider>
       <SidebarProvider>
@@ -80,137 +184,219 @@ export default function Dashboard() {
             <Separator orientation="vertical" className="h-4" />
             <h1 className="text-sm font-semibold">Dashboard</h1>
             <div className="ml-auto flex items-center gap-2">
-              <Badge variant="outline">Live</Badge>
+              <div className="flex items-center gap-1">
+                <Input
+                  placeholder="輸入股票代號 (如 2330)"
+                  value={searchSymbol}
+                  onChange={(e) => setSearchSymbol(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="h-8 w-48"
+                />
+                <Button size="sm" variant="outline" onClick={handleSearch}>
+                  查詢
+                </Button>
+              </div>
+              <Badge variant="outline">
+                {selectedSymbol}
+              </Badge>
               <ThemeToggle />
             </div>
           </header>
 
           {/* Main content */}
           <div className="flex-1 space-y-6 p-6">
+            {error && (
+              <Card className="border-red-500">
+                <CardContent className="pt-4 text-red-500">{error}</CardContent>
+              </Card>
+            )}
+
             {/* Stats row */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
-                title="Total Portfolio"
-                value="$35,448.90"
-                description="+$1,234.56 (+3.61%)"
-                trend="up"
+                title={stockInfo?.long_name || stockInfo?.short_name || selectedSymbol}
+                value={
+                  latestPrice
+                    ? `${stockInfo?.currency === "TWD" ? "NT$" : "$"}${latestPrice.close.toFixed(2)}`
+                    : loading ? "Loading..." : "N/A"
+                }
+                description={
+                  latestPrice
+                    ? `${priceChange >= 0 ? "+" : ""}${priceChange.toFixed(2)} (${priceChangePercent >= 0 ? "+" : ""}${priceChangePercent.toFixed(2)}%)`
+                    : ""
+                }
+                trend={priceChange >= 0 ? "up" : "down"}
               />
               <StatCard
-                title="Today's P&L"
-                value="+$487.22"
-                description="+1.39% from open"
-                trend="up"
+                title="52 Week High"
+                value={
+                  stockInfo?.fifty_two_week_high
+                    ? `$${stockInfo.fifty_two_week_high.toFixed(2)}`
+                    : "N/A"
+                }
+                description={stockInfo?.exchange || ""}
               />
               <StatCard
-                title="Buying Power"
-                value="$12,550.00"
-                description="64% available"
+                title="52 Week Low"
+                value={
+                  stockInfo?.fifty_two_week_low
+                    ? `$${stockInfo.fifty_two_week_low.toFixed(2)}`
+                    : "N/A"
+                }
+                description={
+                  stockInfo?.pe_ratio
+                    ? `P/E: ${stockInfo.pe_ratio.toFixed(2)}`
+                    : ""
+                }
               />
               <StatCard
-                title="Open Orders"
-                value="2"
-                description="1 partial, 1 pending"
+                title="Market Cap"
+                value={
+                  stockInfo?.market_cap
+                    ? stockInfo.market_cap >= 1_000_000_000_000
+                      ? `$${(stockInfo.market_cap / 1_000_000_000_000).toFixed(2)}T`
+                      : stockInfo.market_cap >= 1_000_000_000
+                        ? `$${(stockInfo.market_cap / 1_000_000_000).toFixed(2)}B`
+                        : `$${(stockInfo.market_cap / 1_000_000).toFixed(2)}M`
+                    : "N/A"
+                }
+                description={
+                  stockInfo?.dividend_yield
+                    ? `殖利率: ${(stockInfo.dividend_yield * 100).toFixed(2)}%`
+                    : ""
+                }
               />
             </div>
 
+            {/* Price Chart */}
+            {chartData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {selectedSymbol} 股價走勢
+                  </CardTitle>
+                  <CardDescription>近 3 個月日 K 線收盤價</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 12 }}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        domain={["auto", "auto"]}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <Tooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="close"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Tabs section */}
-            <Tabs defaultValue="portfolio">
+            <Tabs defaultValue="watchlist">
               <TabsList>
-                <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                <TabsTrigger value="trades">Recent Trades</TabsTrigger>
-                <TabsTrigger value="watchlist">Watchlist</TabsTrigger>
+                <TabsTrigger value="watchlist">自選清單</TabsTrigger>
+                <TabsTrigger value="history">歷史股價</TabsTrigger>
+                <TabsTrigger value="news">相關新聞</TabsTrigger>
               </TabsList>
 
-              {/* Portfolio tab */}
-              <TabsContent value="portfolio">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Holdings</CardTitle>
-                    <CardDescription>Your current positions</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Symbol</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead className="text-right">Price</TableHead>
-                          <TableHead className="text-right">Change</TableHead>
-                          <TableHead className="text-right">Shares</TableHead>
-                          <TableHead className="text-right">Value</TableHead>
-                          <TableHead className="text-right">Allocation</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {portfolioData.map((stock) => {
-                          const totalValue = portfolioData.reduce((sum, s) => sum + s.value, 0);
-                          const allocation = (stock.value / totalValue) * 100;
-                          return (
-                            <TableRow key={stock.symbol}>
-                              <TableCell className="font-medium">{stock.symbol}</TableCell>
-                              <TableCell className="text-muted-foreground">{stock.name}</TableCell>
-                              <TableCell className="text-right tabular-nums">${stock.price.toFixed(2)}</TableCell>
-                              <TableCell className={`text-right tabular-nums ${stock.change >= 0 ? "text-emerald-500" : "text-red-500"}`}>
-                                {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)} ({stock.changePercent >= 0 ? "+" : ""}{stock.changePercent.toFixed(2)}%)
-                              </TableCell>
-                              <TableCell className="text-right tabular-nums">{stock.shares}</TableCell>
-                              <TableCell className="text-right tabular-nums">${stock.value.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Progress value={allocation} className="w-16" />
-                                  <span className="w-10 tabular-nums text-muted-foreground">{allocation.toFixed(0)}%</span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+              {/* Watchlist tab */}
+              <TabsContent value="watchlist">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {watchlistData.map((stock) => (
+                    <Card
+                      key={stock.symbol}
+                      className="cursor-pointer transition-colors hover:bg-muted/50"
+                      onClick={() => setSelectedSymbol(stock.symbol)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          {stock.symbol.replace(".TW", "").replace(".TWO", "")}
+                          {stock.info && (
+                            <Badge variant="outline" className="text-xs">
+                              {stock.info.exchange}
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          {stock.loading
+                            ? "Loading..."
+                            : stock.info?.short_name || stock.info?.long_name || ""}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {stock.info?.fifty_two_week_high && (
+                          <div className="text-sm text-muted-foreground">
+                            52W: ${stock.info.fifty_two_week_low?.toFixed(2)} - $
+                            {stock.info.fifty_two_week_high.toFixed(2)}
+                          </div>
+                        )}
+                        {stock.info?.pe_ratio && (
+                          <div className="text-sm text-muted-foreground">
+                            P/E: {stock.info.pe_ratio.toFixed(2)}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </TabsContent>
 
-              {/* Recent Trades tab */}
-              <TabsContent value="trades">
+              {/* History tab */}
+              <TabsContent value="history">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Trades</CardTitle>
-                    <CardDescription>Today's executed orders</CardDescription>
+                    <CardTitle>{selectedSymbol} 歷史股價</CardTitle>
+                    <CardDescription>
+                      {priceHistory.length > 0
+                        ? `${priceHistory[0].date} ~ ${priceHistory[priceHistory.length - 1].date} (${priceHistory.length} 筆)`
+                        : "No data"}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Symbol</TableHead>
-                          <TableHead>Side</TableHead>
-                          <TableHead className="text-right">Qty</TableHead>
-                          <TableHead className="text-right">Price</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
+                          <TableHead>日期</TableHead>
+                          <TableHead className="text-right">開盤</TableHead>
+                          <TableHead className="text-right">最高</TableHead>
+                          <TableHead className="text-right">最低</TableHead>
+                          <TableHead className="text-right">收盤</TableHead>
+                          <TableHead className="text-right">成交量</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {recentTrades.map((trade) => (
-                          <TableRow key={trade.id}>
-                            <TableCell className="tabular-nums text-muted-foreground">{trade.time}</TableCell>
-                            <TableCell className="font-medium">{trade.symbol}</TableCell>
-                            <TableCell>
-                              <Badge variant={trade.side === "BUY" ? "default" : "secondary"}>
-                                {trade.side}
-                              </Badge>
+                        {[...priceHistory].reverse().slice(0, 30).map((price) => (
+                          <TableRow key={price.date}>
+                            <TableCell className="tabular-nums">
+                              {price.date}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">{trade.qty}</TableCell>
-                            <TableCell className="text-right tabular-nums">${trade.price.toFixed(2)}</TableCell>
-                            <TableCell className="text-right">
-                              <Badge
-                                variant={
-                                  trade.status === "filled" ? "outline"
-                                    : trade.status === "partial" ? "secondary"
-                                      : "destructive"
-                                }
-                              >
-                                {trade.status}
-                              </Badge>
+                            <TableCell className="text-right tabular-nums">
+                              {price.open.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {price.high.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {price.low.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {price.close.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {(price.volume / 1000).toFixed(0)}K
                             </TableCell>
                           </TableRow>
                         ))}
@@ -220,25 +406,54 @@ export default function Dashboard() {
                 </Card>
               </TabsContent>
 
-              {/* Watchlist tab */}
-              <TabsContent value="watchlist">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {watchlist.map((stock) => (
-                    <Card key={stock.symbol}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          {stock.symbol}
-                          <Badge variant={stock.change >= 0 ? "default" : "destructive"}>
-                            {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold tabular-nums">${stock.price.toFixed(2)}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+              {/* News tab */}
+              <TabsContent value="news">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{selectedSymbol} 相關新聞</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {news.length === 0 ? (
+                      <p className="text-muted-foreground">
+                        {loading ? "Loading..." : "暫無新聞"}
+                      </p>
+                    ) : (
+                      news.map((item, i) => (
+                        <div key={i} className="border-b pb-3 last:border-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              {item.link ? (
+                                <a
+                                  href={item.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium hover:underline"
+                                >
+                                  {item.title}
+                                </a>
+                              ) : (
+                                <span className="font-medium">{item.title}</span>
+                              )}
+                              {item.summary && (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {item.summary}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="shrink-0 text-xs">
+                              {item.publisher}
+                            </Badge>
+                          </div>
+                          {item.pub_date && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {item.pub_date}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
