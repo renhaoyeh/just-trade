@@ -9,6 +9,7 @@
     "portfolio": "持倉",
     "trade": "交易",
     "history": "歷史紀錄",
+    "sectors": "產業類股",
     "watchlist": "自選清單",
     "settings": "設定",
     "signOut": "登出",
@@ -66,5 +67,22 @@
   "news": {
     "title": "{{symbol}} 相關新聞",
     "empty": "暫無新聞"
+  },
+  "sectors": {
+    "title": "產業類股",
+    "description": "台灣上市公司產業分類",
+    "stockCount": "{{count}} 檔",
+    "loading": "載入產業資料中...",
+    "empty": "無產業資料"
+  },
+  "sectorDetail": {
+    "backToSectors": "返回產業類股",
+    "symbol": "股票代號",
+    "name": "股票名稱",
+    "price": "收盤價",
+    "change": "漲跌",
+    "volume": "成交量",
+    "loading": "載入中...",
+    "empty": "此產業無上市股票"
   }
 }

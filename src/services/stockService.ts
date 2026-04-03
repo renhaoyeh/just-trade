@@ -4,6 +4,8 @@ import type {
   StockInfo,
   StockNews,
   SearchResult,
+  Sector,
+  SectorStock,
 } from "@/types/stock";
 
 export async function fetchStockHistory(
@@ -27,4 +29,12 @@ export async function fetchStockNews(
 
 export async function searchStocks(query: string): Promise<SearchResult[]> {
   return invoke("search_stocks", { query });
+}
+
+export async function getSectors(): Promise<Sector[]> {
+  return invoke("get_sectors");
+}
+
+export async function getSectorStocks(sector: string): Promise<SectorStock[]> {
+  return invoke("get_sector_stocks", { sector });
 }

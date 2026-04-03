@@ -9,6 +9,7 @@
     "portfolio": "Portfolio",
     "trade": "Trade",
     "history": "History",
+    "sectors": "Sectors",
     "watchlist": "Watchlist",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -66,5 +67,22 @@
   "news": {
     "title": "{{symbol}} News",
     "empty": "No news available"
+  },
+  "sectors": {
+    "title": "Sectors",
+    "description": "TWSE listed companies by industry",
+    "stockCount": "{{count}} stocks",
+    "loading": "Loading sector data...",
+    "empty": "No sector data"
+  },
+  "sectorDetail": {
+    "backToSectors": "Back to Sectors",
+    "symbol": "Symbol",
+    "name": "Name",
+    "price": "Close",
+    "change": "Change",
+    "volume": "Volume",
+    "loading": "Loading...",
+    "empty": "No stocks in this sector"
   }
 }

@@ -41,3 +41,17 @@ export interface SearchResult {
   exchange: string | null;
   quote_type: string | null;
 }
+
+export interface Sector {
+  name: string;
+  stock_count: number;
+}
+
+export interface SectorStock {
+  symbol: string;
+  name: string;
+  sector: string;
+  closing_price: number | null;
+  change: number | null;
+  trade_volume: number | null;
+}
