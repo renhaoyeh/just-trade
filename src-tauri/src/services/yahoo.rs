@@ -328,8 +328,8 @@ impl YahooClient {
         count: u32,
     ) -> Result<Vec<StockNews>, YahooError> {
         let url = format!(
-            "{}?q={}&newsCount={}&enableFuzzyQuery=true&quotesCount=0",
-            YAHOO_SEARCH_URL, symbol, count
+            "{}?q={}&newsCount={}&enableFuzzyQuery=true&quotesCount=0&lang={}&region={}",
+            YAHOO_SEARCH_URL, symbol, count, self.lang, self.region
         );
 
         let resp = self.request_with_retry(&url).await?;
@@ -362,8 +362,8 @@ impl YahooClient {
     /// Search for stock symbols.
     pub async fn search(&self, query: &str) -> Result<Vec<SearchResult>, YahooError> {
         let url = format!(
-            "{}?q={}&quotesCount=10&newsCount=0&enableFuzzyQuery=true",
-            YAHOO_SEARCH_URL, query
+            "{}?q={}&quotesCount=10&newsCount=0&enableFuzzyQuery=true&lang={}&region={}",
+            YAHOO_SEARCH_URL, query, self.lang, self.region
         );
 
         let resp = self.request_with_retry(&url).await?;
