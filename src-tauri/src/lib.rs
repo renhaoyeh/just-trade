@@ -11,7 +11,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // Initialize API clients
-            let yahoo_client = services::yahoo::YahooClient::new();
+            let yahoo_client = services::yahoo::YahooClient::new("zh-TW", "TW");
             app.manage(yahoo_client);
             let twse_client = services::twse::TwseClient::new();
             app.manage(twse_client);

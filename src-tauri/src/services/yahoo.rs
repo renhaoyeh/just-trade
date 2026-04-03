@@ -33,10 +33,12 @@ pub enum YahooError {
 pub struct YahooClient {
     client: reqwest::Client,
     crumb: Arc<RwLock<Option<String>>>,
+    lang: String,
+    region: String,
 }
 
 impl YahooClient {
-    pub fn new() -> Self {
+    pub fn new(lang: &str, region: &str) -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(
             USER_AGENT,
@@ -55,6 +57,8 @@ impl YahooClient {
         Self {
             client,
             crumb: Arc::new(RwLock::new(None)),
+            lang: lang.to_string(),
+            region: region.to_string(),
         }
     }
 
@@ -163,8 +167,8 @@ impl YahooClient {
             .timestamp();
 
         let url = format!(
-            "{}/{}?period1={}&period2={}&interval={}&crumb={}",
-            YAHOO_CHART_URL, symbol, start_ts, end_ts, interval, crumb
+            "{}/{}?period1={}&period2={}&interval={}&crumb={}&lang={}&region={}",
+            YAHOO_CHART_URL, symbol, start_ts, end_ts, interval, crumb, self.lang, self.region
         );
 
         let resp = self.request_with_retry(&url).await?;
@@ -258,8 +262,8 @@ impl YahooClient {
         let crumb = self.ensure_crumb().await?;
 
         let url = format!(
-            "{}/{}?modules=summaryDetail,price&crumb={}",
-            YAHOO_QUOTE_SUMMARY_URL, symbol, crumb
+            "{}/{}?modules=summaryDetail,price&crumb={}&lang={}&region={}",
+            YAHOO_QUOTE_SUMMARY_URL, symbol, crumb, self.lang, self.region
         );
 
         let resp = self.request_with_retry(&url).await?;
