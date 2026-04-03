@@ -66,16 +66,40 @@ describe("Backtest Page", () => {
     expect(screen.getByText("回測設定")).toBeInTheDocument();
     expect(screen.getByDisplayValue("2330.TW")).toBeInTheDocument();
     expect(screen.getByDisplayValue("1000000")).toBeInTheDocument();
+    // Default SMA params
     expect(screen.getByDisplayValue("5")).toBeInTheDocument();
     expect(screen.getByDisplayValue("20")).toBeInTheDocument();
   });
 
-  it("renders the run button", () => {
+  it("renders all strategy buttons", () => {
     renderBacktest();
-    expect(screen.getByRole("button", { name: "開始回測" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "均線交叉" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "RSI" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "布林通道" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "MACD" })).toBeInTheDocument();
   });
 
-  it("calls run_backtest and displays results on submit", async () => {
+  it("switches strategy params when clicking a different strategy", async () => {
+    renderBacktest();
+
+    // Click RSI
+    await userEvent.click(screen.getByRole("button", { name: "RSI" }));
+    expect(screen.getByDisplayValue("14")).toBeInTheDocument(); // period
+    expect(screen.getByDisplayValue("70")).toBeInTheDocument(); // overbought
+    expect(screen.getByDisplayValue("30")).toBeInTheDocument(); // oversold
+
+    // Click MACD
+    await userEvent.click(screen.getByRole("button", { name: "MACD" }));
+    expect(screen.getByDisplayValue("12")).toBeInTheDocument(); // fast
+    expect(screen.getByDisplayValue("26")).toBeInTheDocument(); // slow
+    expect(screen.getByDisplayValue("9")).toBeInTheDocument();  // signal
+
+    // Click Bollinger Bands
+    await userEvent.click(screen.getByRole("button", { name: "布林通道" }));
+    expect(screen.getByDisplayValue("2")).toBeInTheDocument(); // std_dev
+  });
+
+  it("calls run_backtest with SMA strategy and displays results", async () => {
     mockedInvoke.mockResolvedValueOnce(mockBacktestResult);
     renderBacktest();
 
@@ -87,8 +111,7 @@ describe("Backtest Page", () => {
         params: expect.objectContaining({
           symbol: "2330.TW",
           initial_capital: 1000000,
-          short_period: 5,
-          long_period: 20,
+          strategy: { type: "SmaCrossover", short_period: 5, long_period: 20 },
         }),
       });
     });
@@ -98,6 +121,22 @@ describe("Backtest Page", () => {
       expect(screen.getByText("+5.00%")).toBeInTheDocument();
       expect(screen.getByText("-3.20%")).toBeInTheDocument();
       expect(screen.getByText("66.7%")).toBeInTheDocument();
+    });
+  });
+
+  it("calls run_backtest with RSI strategy", async () => {
+    mockedInvoke.mockResolvedValueOnce(mockBacktestResult);
+    renderBacktest();
+
+    await userEvent.click(screen.getByRole("button", { name: "RSI" }));
+    await userEvent.click(screen.getByRole("button", { name: "開始回測" }));
+
+    await waitFor(() => {
+      expect(mockedInvoke).toHaveBeenCalledWith("run_backtest", {
+        params: expect.objectContaining({
+          strategy: { type: "Rsi", period: 14, overbought: 70, oversold: 30 },
+        }),
+      });
     });
   });
 

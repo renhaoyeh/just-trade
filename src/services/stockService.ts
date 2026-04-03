@@ -163,13 +163,18 @@ export async function fugleWsStatus(): Promise<boolean> {
 
 import type { BacktestResult } from "@/types/stock";
 
+export type StrategyConfig =
+  | { type: "SmaCrossover"; short_period: number; long_period: number }
+  | { type: "Rsi"; period: number; overbought: number; oversold: number }
+  | { type: "BollingerBands"; period: number; std_dev: number }
+  | { type: "Macd"; fast_period: number; slow_period: number; signal_period: number };
+
 export interface RunBacktestParams {
   symbol: string;
   start_date: string;
   end_date: string;
   initial_capital: number;
-  short_period: number;
-  long_period: number;
+  strategy: StrategyConfig;
 }
 
 export async function runBacktest(

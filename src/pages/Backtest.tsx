@@ -21,7 +21,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { runBacktest } from "@/services/stockService";
+import type { StrategyConfig } from "@/services/stockService";
 import type { BacktestResult } from "@/types/stock";
+
+const STRATEGY_TYPES = [
+  "SmaCrossover",
+  "Rsi",
+  "BollingerBands",
+  "Macd",
+] as const;
+type StrategyType = (typeof STRATEGY_TYPES)[number];
+
+function defaultStrategyConfig(type: StrategyType): StrategyConfig {
+  switch (type) {
+    case "SmaCrossover":
+      return { type: "SmaCrossover", short_period: 5, long_period: 20 };
+    case "Rsi":
+      return { type: "Rsi", period: 14, overbought: 70, oversold: 30 };
+    case "BollingerBands":
+      return { type: "BollingerBands", period: 20, std_dev: 2.0 };
+    case "Macd":
+      return { type: "Macd", fast_period: 12, slow_period: 26, signal_period: 9 };
+  }
+}
 
 function formatNumber(n: number, decimals = 0): string {
   return n.toLocaleString("zh-TW", {
@@ -38,13 +60,24 @@ export default function Backtest() {
   const [startDate, setStartDate] = useState("2023-01-01");
   const [endDate, setEndDate] = useState("2024-12-31");
   const [initialCapital, setInitialCapital] = useState(1000000);
-  const [shortPeriod, setShortPeriod] = useState(5);
-  const [longPeriod, setLongPeriod] = useState(20);
+  const [strategyType, setStrategyType] = useState<StrategyType>("SmaCrossover");
+  const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(
+    defaultStrategyConfig("SmaCrossover")
+  );
 
   // Result state
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleStrategyChange = (type: StrategyType) => {
+    setStrategyType(type);
+    setStrategyConfig(defaultStrategyConfig(type));
+  };
+
+  const updateParam = (key: string, value: number) => {
+    setStrategyConfig((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleRun = async () => {
     setLoading(true);
@@ -56,8 +89,7 @@ export default function Backtest() {
         start_date: startDate,
         end_date: endDate,
         initial_capital: initialCapital,
-        short_period: shortPeriod,
-        long_period: longPeriod,
+        strategy: strategyConfig,
       });
       setResult(res);
     } catch (e) {
@@ -85,8 +117,9 @@ export default function Backtest() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{t("backtest.config")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <CardContent className="space-y-4">
+            {/* Basic params */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">
                   {t("backtest.symbol")}
@@ -127,36 +160,43 @@ export default function Backtest() {
                   onChange={(e) => setInitialCapital(Number(e.target.value))}
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("backtest.shortMa")}
-                </label>
-                <Input
-                  type="number"
-                  value={shortPeriod}
-                  onChange={(e) => setShortPeriod(Number(e.target.value))}
-                  min={1}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  {t("backtest.longMa")}
-                </label>
-                <Input
-                  type="number"
-                  value={longPeriod}
-                  onChange={(e) => setLongPeriod(Number(e.target.value))}
-                  min={2}
-                />
+            </div>
+
+            {/* Strategy selection */}
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">
+                {t("backtest.strategy")}
+              </label>
+              <div className="flex gap-2">
+                {STRATEGY_TYPES.map((st) => (
+                  <Button
+                    key={st}
+                    variant={strategyType === st ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleStrategyChange(st)}
+                  >
+                    {t(`backtest.strategies.${st}`)}
+                  </Button>
+                ))}
               </div>
             </div>
-            <div className="mt-4">
+
+            {/* Strategy-specific params */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StrategyParams
+                config={strategyConfig}
+                onUpdate={updateParam}
+                t={t}
+              />
+            </div>
+
+            <div>
               <Button onClick={handleRun} disabled={loading || !symbol}>
                 {loading ? t("backtest.running") : t("backtest.run")}
               </Button>
             </div>
             {error && (
-              <p className="mt-2 text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">{error}</p>
             )}
           </CardContent>
         </Card>
@@ -313,6 +353,83 @@ export default function Backtest() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Strategy-specific parameter inputs
+// ---------------------------------------------------------------------------
+
+function StrategyParams({
+  config,
+  onUpdate,
+  t,
+}: {
+  config: StrategyConfig;
+  onUpdate: (key: string, value: number) => void;
+  t: (key: string) => string;
+}) {
+  switch (config.type) {
+    case "SmaCrossover":
+      return (
+        <>
+          <ParamInput label={t("backtest.shortMa")} value={config.short_period} onChange={(v) => onUpdate("short_period", v)} min={1} />
+          <ParamInput label={t("backtest.longMa")} value={config.long_period} onChange={(v) => onUpdate("long_period", v)} min={2} />
+        </>
+      );
+    case "Rsi":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+          <ParamInput label={t("backtest.params.overbought")} value={config.overbought} onChange={(v) => onUpdate("overbought", v)} min={50} max={100} />
+          <ParamInput label={t("backtest.params.oversold")} value={config.oversold} onChange={(v) => onUpdate("oversold", v)} min={0} max={50} />
+        </>
+      );
+    case "BollingerBands":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+          <ParamInput label={t("backtest.params.stdDev")} value={config.std_dev} onChange={(v) => onUpdate("std_dev", v)} min={0.5} step={0.1} />
+        </>
+      );
+    case "Macd":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.fastPeriod")} value={config.fast_period} onChange={(v) => onUpdate("fast_period", v)} min={2} />
+          <ParamInput label={t("backtest.params.slowPeriod")} value={config.slow_period} onChange={(v) => onUpdate("slow_period", v)} min={2} />
+          <ParamInput label={t("backtest.params.signalPeriod")} value={config.signal_period} onChange={(v) => onUpdate("signal_period", v)} min={2} />
+        </>
+      );
+  }
+}
+
+function ParamInput({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs text-muted-foreground">{label}</label>
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        min={min}
+        max={max}
+        step={step}
+      />
     </div>
   );
 }

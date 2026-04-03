@@ -179,6 +179,22 @@
     "initialCapital": "Initial Capital",
     "shortMa": "Short MA",
     "longMa": "Long MA",
+    "strategy": "Strategy",
+    "strategies": {
+      "SmaCrossover": "SMA Crossover",
+      "Rsi": "RSI",
+      "BollingerBands": "Bollinger Bands",
+      "Macd": "MACD"
+    },
+    "params": {
+      "period": "Period",
+      "overbought": "Overbought",
+      "oversold": "Oversold",
+      "stdDev": "Std Dev Multiplier",
+      "fastPeriod": "Fast Period",
+      "slowPeriod": "Slow Period",
+      "signalPeriod": "Signal Period"
+    },
     "run": "Run Backtest",
     "running": "Running...",
     "totalReturn": "Total Return",

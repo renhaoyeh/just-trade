@@ -3,7 +3,7 @@ use sqlx::SqlitePool;
 use tauri::State;
 
 use crate::backtest::engine::{self, BacktestConfig, BacktestResult};
-use crate::backtest::strategy::{sma_crossover_signals, SmaCrossoverConfig};
+use crate::backtest::strategy::{generate_signals, min_data_points, StrategyConfig};
 use crate::db::stock_prices;
 use crate::services::yahoo::YahooClient;
 
@@ -13,11 +13,10 @@ pub struct RunBacktestParams {
     pub start_date: String,
     pub end_date: String,
     pub initial_capital: f64,
-    pub short_period: usize,
-    pub long_period: usize,
+    pub strategy: StrategyConfig,
 }
 
-/// Run a SMA-crossover backtest on a given symbol and date range.
+/// Run a backtest with the chosen strategy on a given symbol and date range.
 /// Uses the cache-through pattern to fetch price data.
 #[tauri::command]
 pub async fn run_backtest(
@@ -78,20 +77,17 @@ pub async fn run_backtest(
         .await
         .map_err(|e| format!("DB error: {e}"))?;
 
-    if prices.len() < params.long_period {
+    let required = min_data_points(&params.strategy);
+    if prices.len() < required {
         return Err(format!(
-            "Not enough data: got {} days, need at least {} for long MA period",
+            "Not enough data: got {} days, need at least {} for this strategy",
             prices.len(),
-            params.long_period
+            required
         ));
     }
 
     // Compute strategy signals
-    let strategy_config = SmaCrossoverConfig {
-        short_period: params.short_period,
-        long_period: params.long_period,
-    };
-    let signals = sma_crossover_signals(&prices, &strategy_config);
+    let signals = generate_signals(&prices, &params.strategy);
 
     // Run backtest engine
     let backtest_config = BacktestConfig {
