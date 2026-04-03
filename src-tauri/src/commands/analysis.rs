@@ -136,28 +136,68 @@ async fn cooldown(app: &AppHandle, secs: u64) {
     }
 }
 
+/// Run or load a single step. Returns cached content if available, otherwise calls LLM.
+async fn run_or_load_step(
+    app: &AppHandle,
+    pool: &SqlitePool,
+    config: &LlmConfig,
+    symbol: &str,
+    today: &str,
+    agent_id: &str,
+    agent_name: &str,
+    phase: &str,
+    prompt: &str,
+    vars: &HashMap<String, String>,
+    cooldown_secs: u64,
+    cached_steps: &HashMap<String, String>,
+) -> Result<String, String> {
+    // Check cache first
+    if let Some(content) = cached_steps.get(agent_id) {
+        emit_progress(app, phase, agent_name, "done", Some(content));
+        return Ok(content.clone());
+    }
+
+    // Run LLM
+    emit_progress(app, phase, agent_name, "running", None);
+    match call_agent(app, config, agent_id, prompt, vars, cooldown_secs).await {
+        Ok(resp) => {
+            // Save step to DB immediately
+            let _ = db::analysis::save_step(pool, symbol, today, agent_id, phase, &resp).await;
+            emit_progress(app, phase, agent_name, "done", Some(&resp));
+            Ok(resp)
+        }
+        Err(e) => {
+            emit_progress(app, phase, agent_name, "error", Some(&e.to_string()));
+            Err(e.to_string())
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn run_analysis(
     app: AppHandle,
     symbol: String,
     pipeline_config: PipelineConfig,
 ) -> Result<AnalysisResult, String> {
-    // Check if today's analysis already exists and is complete
     let pool = app.state::<SqlitePool>();
-    if let Ok(Some(existing)) = db::analysis::get_today_analysis(pool.inner(), &symbol).await {
-        if let Ok(content) = std::fs::read_to_string(&existing.report_path) {
-            if let Ok(result) = serde_json::from_str::<AnalysisResult>(&content) {
-                // Only reuse if the pipeline actually completed (has final decision + signal)
-                if !result.final_decision.is_empty() && !result.signal.is_empty() {
-                    emit_progress(&app, "complete", "", "done", Some(&result.signal));
-                    return Ok(result);
-                }
-            }
-        }
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    // Load any steps already completed today for this symbol
+    let existing_steps = db::analysis::get_steps(pool.inner(), &symbol, &today)
+        .await
+        .unwrap_or_default();
+    let cached_steps: HashMap<String, String> = existing_steps
+        .into_iter()
+        .map(|(agent_id, _phase, content)| (agent_id, content))
+        .collect();
+
+    if !cached_steps.is_empty() {
+        eprintln!("Resuming analysis for {symbol}: {} steps cached", cached_steps.len());
     }
 
     let quick = &pipeline_config.quick_llm;
     let deep = &pipeline_config.deep_llm;
+    let pool_ref = pool.inner();
 
     let mut result = AnalysisResult {
         market_report: String::new(),
@@ -189,22 +229,17 @@ pub async fn run_analysis(
         if !enabled {
             continue;
         }
-        emit_progress(&app, "analysts", name, "running", None);
-        match call_agent(&app, quick, agent_id, &prompt, &HashMap::new(), pipeline_config.cooldown_secs).await {
-            Ok(report) => {
-                emit_progress(&app, "analysts", name, "done", Some(&report));
-                match *field {
-                    "market" => result.market_report = report,
-                    "news" => result.news_report = report,
-                    "fundamentals" => result.fundamentals_report = report,
-                    "social" => result.social_report = report,
-                    _ => {}
-                }
-            }
-            Err(e) => {
-                emit_progress(&app, "analysts", name, "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
+        let report = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            agent_id, name, "analysts", &prompt, &HashMap::new(),
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        match *field {
+            "market" => result.market_report = report,
+            "news" => result.news_report = report,
+            "fundamentals" => result.fundamentals_report = report,
+            "social" => result.social_report = report,
+            _ => {}
         }
     }
 
@@ -213,9 +248,6 @@ pub async fn run_analysis(
     let mut current_response = String::new();
 
     for round in 0..pipeline_config.max_debate_rounds {
-        // Bull
-        emit_progress(&app, "debate", "Bull Researcher", "running",
-            Some(&format!("Round {}/{}", round + 1, pipeline_config.max_debate_rounds)));
         let mut vars = HashMap::new();
         vars.insert("market_research_report".into(), result.market_report.clone());
         vars.insert("sentiment_report".into(), result.social_report.clone());
@@ -225,79 +257,57 @@ pub async fn run_analysis(
         vars.insert("current_response".into(), current_response.clone());
         vars.insert("past_memory_str".into(), String::new());
 
-        match call_agent(&app, quick, "bull_researcher", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                debate_history.push_str(&format!("\n\n**Bull (Round {}):**\n{resp}", round + 1));
-                current_response = resp.clone();
-                result.bull_arguments = resp;
-                emit_progress(&app, "debate", "Bull Researcher", "done", Some(&result.bull_arguments));
-            }
-            Err(e) => {
-                emit_progress(&app, "debate", "Bull Researcher", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        let bull_id = format!("bull_researcher_r{}", round + 1);
+        let resp = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            &bull_id, "Bull Researcher", "debate", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        debate_history.push_str(&format!("\n\n**Bull (Round {}):**\n{resp}", round + 1));
+        current_response = resp.clone();
+        result.bull_arguments = resp;
 
-        // Bear
-        emit_progress(&app, "debate", "Bear Researcher", "running",
-            Some(&format!("Round {}/{}", round + 1, pipeline_config.max_debate_rounds)));
         vars.insert("history".into(), debate_history.clone());
         vars.insert("current_response".into(), current_response.clone());
 
-        match call_agent(&app, quick, "bear_researcher", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                debate_history.push_str(&format!("\n\n**Bear (Round {}):**\n{resp}", round + 1));
-                current_response = resp.clone();
-                result.bear_arguments = resp;
-                emit_progress(&app, "debate", "Bear Researcher", "done", Some(&result.bear_arguments));
-            }
-            Err(e) => {
-                emit_progress(&app, "debate", "Bear Researcher", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        let bear_id = format!("bear_researcher_r{}", round + 1);
+        let resp = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            &bear_id, "Bear Researcher", "debate", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        debate_history.push_str(&format!("\n\n**Bear (Round {}):**\n{resp}", round + 1));
+        current_response = resp.clone();
+        result.bear_arguments = resp;
     }
 
-    // ── Phase 3: Research Manager judges debate ──
-    emit_progress(&app, "decision", "Research Manager", "running", None);
+    // ── Phase 3: Research Manager ──
     {
         let mut vars = HashMap::new();
         vars.insert("history".into(), debate_history.clone());
         vars.insert("past_memory_str".into(), String::new());
         vars.insert("instrument_context".into(), format!("Stock: {symbol}"));
 
-        match call_agent(&app, deep, "research_manager", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                result.investment_decision = resp;
-                emit_progress(&app, "decision", "Research Manager", "done", Some(&result.investment_decision));
-            }
-            Err(e) => {
-                emit_progress(&app, "decision", "Research Manager", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        result.investment_decision = run_or_load_step(
+            &app, pool_ref, deep, &symbol, &today,
+            "research_manager", "Research Manager", "decision", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
     }
 
     // ── Phase 4: Trader ──
-    emit_progress(&app, "decision", "Trader", "running", None);
     {
         let mut vars = HashMap::new();
         vars.insert("past_memory_str".into(), String::new());
-
         let trader_prompt = format!(
             "Based on the investment plan below, make your trading decision for {symbol}.\n\nInvestment Plan:\n{}",
             result.investment_decision
         );
-        match call_agent(&app, deep, "trader", &trader_prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                result.trader_plan = resp;
-                emit_progress(&app, "decision", "Trader", "done", Some(&result.trader_plan));
-            }
-            Err(e) => {
-                emit_progress(&app, "decision", "Trader", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        result.trader_plan = run_or_load_step(
+            &app, pool_ref, deep, &symbol, &today,
+            "trader", "Trader", "decision", &trader_prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
     }
 
     // ── Phase 5: Risk Management Debate ──
@@ -307,10 +317,6 @@ pub async fn run_analysis(
     let mut neu_resp = String::new();
 
     for round in 0..pipeline_config.max_risk_rounds {
-        let round_label = format!("Round {}/{}", round + 1, pipeline_config.max_risk_rounds);
-
-        // Aggressive
-        emit_progress(&app, "risk", "Aggressive Analyst", "running", Some(&round_label));
         let mut vars = HashMap::new();
         vars.insert("trader_decision".into(), result.trader_plan.clone());
         vars.insert("market_research_report".into(), result.market_report.clone());
@@ -321,60 +327,44 @@ pub async fn run_analysis(
         vars.insert("current_conservative_response".into(), con_resp.clone());
         vars.insert("current_neutral_response".into(), neu_resp.clone());
 
-        match call_agent(&app, quick, "aggressive_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                risk_history.push_str(&format!("\n\n**Aggressive (Round {}):**\n{resp}", round + 1));
-                agg_resp = resp.clone();
-                result.risk_aggressive = resp;
-                emit_progress(&app, "risk", "Aggressive Analyst", "done", Some(&result.risk_aggressive));
-            }
-            Err(e) => {
-                emit_progress(&app, "risk", "Aggressive Analyst", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        let agg_id = format!("aggressive_risk_r{}", round + 1);
+        let resp = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            &agg_id, "Aggressive Analyst", "risk", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        risk_history.push_str(&format!("\n\n**Aggressive (Round {}):**\n{resp}", round + 1));
+        agg_resp = resp.clone();
+        result.risk_aggressive = resp;
 
-        // Conservative
-        emit_progress(&app, "risk", "Conservative Analyst", "running", Some(&round_label));
         vars.insert("history".into(), risk_history.clone());
         vars.insert("current_aggressive_response".into(), agg_resp.clone());
-        vars.insert("current_neutral_response".into(), neu_resp.clone());
 
-        match call_agent(&app, quick, "conservative_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                risk_history.push_str(&format!("\n\n**Conservative (Round {}):**\n{resp}", round + 1));
-                con_resp = resp.clone();
-                result.risk_conservative = resp;
-                emit_progress(&app, "risk", "Conservative Analyst", "done", Some(&result.risk_conservative));
-            }
-            Err(e) => {
-                emit_progress(&app, "risk", "Conservative Analyst", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        let con_id = format!("conservative_risk_r{}", round + 1);
+        let resp = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            &con_id, "Conservative Analyst", "risk", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        risk_history.push_str(&format!("\n\n**Conservative (Round {}):**\n{resp}", round + 1));
+        con_resp = resp.clone();
+        result.risk_conservative = resp;
 
-        // Neutral
-        emit_progress(&app, "risk", "Neutral Analyst", "running", Some(&round_label));
         vars.insert("history".into(), risk_history.clone());
-        vars.insert("current_aggressive_response".into(), agg_resp.clone());
         vars.insert("current_conservative_response".into(), con_resp.clone());
 
-        match call_agent(&app, quick, "neutral_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                risk_history.push_str(&format!("\n\n**Neutral (Round {}):**\n{resp}", round + 1));
-                neu_resp = resp.clone();
-                result.risk_neutral = resp;
-                emit_progress(&app, "risk", "Neutral Analyst", "done", Some(&result.risk_neutral));
-            }
-            Err(e) => {
-                emit_progress(&app, "risk", "Neutral Analyst", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        let neu_id = format!("neutral_risk_r{}", round + 1);
+        let resp = run_or_load_step(
+            &app, pool_ref, quick, &symbol, &today,
+            &neu_id, "Neutral Analyst", "risk", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        risk_history.push_str(&format!("\n\n**Neutral (Round {}):**\n{resp}", round + 1));
+        neu_resp = resp.clone();
+        result.risk_neutral = resp;
     }
 
     // ── Phase 6: Portfolio Manager ──
-    emit_progress(&app, "final", "Portfolio Manager", "running", None);
     {
         let mut vars = HashMap::new();
         vars.insert("instrument_context".into(), format!("Stock: {symbol}"));
@@ -382,19 +372,12 @@ pub async fn run_analysis(
         vars.insert("past_memory_str".into(), String::new());
         vars.insert("history".into(), risk_history.clone());
 
-        match call_agent(&app, deep, "portfolio_manager", &prompt, &vars, pipeline_config.cooldown_secs).await {
-            Ok(resp) => {
-                // Extract signal from response
-                let signal = extract_signal(&resp);
-                result.final_decision = resp;
-                result.signal = signal;
-                emit_progress(&app, "final", "Portfolio Manager", "done", Some(&result.final_decision));
-            }
-            Err(e) => {
-                emit_progress(&app, "final", "Portfolio Manager", "error", Some(&e.to_string()));
-                return Err(e.to_string());
-            }
-        }
+        result.final_decision = run_or_load_step(
+            &app, pool_ref, deep, &symbol, &today,
+            "portfolio_manager", "Portfolio Manager", "final", &prompt, &vars,
+            pipeline_config.cooldown_secs, &cached_steps,
+        ).await?;
+        result.signal = extract_signal(&result.final_decision);
     }
 
     // ── Save to DB + JSON ──
