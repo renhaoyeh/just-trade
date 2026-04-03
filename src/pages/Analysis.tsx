@@ -70,6 +70,20 @@ const PHASE_LABELS: Record<string, string> = {
   risk: "analysis.phaseRisk",
   final: "analysis.phaseFinal",
 };
+const PHASE_COLORS: Record<string, string> = {
+  analysts: "border-cyan-500/50",
+  debate: "border-purple-500/50",
+  decision: "border-yellow-500/50",
+  risk: "border-red-500/50",
+  final: "border-emerald-500/50",
+};
+const PHASE_TITLE_COLORS: Record<string, string> = {
+  analysts: "text-cyan-500",
+  debate: "text-purple-500",
+  decision: "text-yellow-500",
+  risk: "text-red-500",
+  final: "text-emerald-500",
+};
 
 function stepKey(s: { phase: string; agent: string }) {
   return `${s.phase}-${s.agent}`;
@@ -363,45 +377,46 @@ export default function Analysis() {
               </Card>
             )}
 
-            {/* Grouped by phase */}
+            {/* Grouped by phase — vertical panels matching TradingAgents CLI */}
             {(() => {
               const grouped = groupByPhase(displaySteps);
               return PHASE_ORDER.filter((phase) => grouped[phase]).map((phase) => (
-                <div key={phase} className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t(PHASE_LABELS[phase])}
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Card key={phase} className={`border-2 ${PHASE_COLORS[phase]}`}>
+                  <CardHeader className="py-3">
+                    <CardTitle className={`text-sm uppercase tracking-wider ${PHASE_TITLE_COLORS[phase]}`}>
+                      {t(PHASE_LABELS[phase])}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-0">
                     {grouped[phase].map((step, i) => {
                       const key = stepKey(step);
                       const isOpen = expandedCards.has(key);
 
                       return (
-                        <Card
+                        <div
                           key={`${key}-${i}`}
-                          className={
-                            step.status === "running" ? "ring-2 ring-primary/50 animate-pulse" :
-                            step.status === "error" ? "ring-2 ring-destructive/50" : ""
-                          }
+                          className={`rounded-md border ${
+                            step.status === "running" ? "border-primary/50 animate-pulse" :
+                            step.status === "error" ? "border-destructive/50" :
+                            "border-border"
+                          }`}
                         >
                           <Collapsible open={isOpen} onOpenChange={() => toggleCard(key)}>
                             <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-sm ${step.status === "running" ? "animate-pulse" : ""}`}>
-                                    {step.status === "running" ? "⏳" :
-                                     step.status === "done" ? "✅" :
-                                     step.status === "error" ? "❌" : "⬜"}
-                                  </span>
-                                  <span className="text-sm font-medium flex-1">{step.agent}</span>
-                                  {step.statusMessage && step.status === "running" && (
-                                    <span className="text-xs text-muted-foreground">{step.statusMessage}</span>
-                                  )}
-                                </div>
-                              </CardHeader>
+                              <div className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-muted/50">
+                                <span className={`text-sm ${step.status === "running" ? "animate-pulse" : ""}`}>
+                                  {step.status === "running" ? "⏳" :
+                                   step.status === "done" ? "✅" :
+                                   step.status === "error" ? "❌" : "⬜"}
+                                </span>
+                                <span className="text-sm font-medium flex-1">{step.agent}</span>
+                                {step.statusMessage && step.status === "running" && (
+                                  <span className="text-xs text-muted-foreground">{step.statusMessage}</span>
+                                )}
+                              </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <CardContent className="pt-0">
+                              <div className="px-4 pb-3">
                                 {step.status === "running" && (
                                   <div className="space-y-2">
                                     <Skeleton className="h-4 w-full" />
@@ -410,21 +425,21 @@ export default function Analysis() {
                                   </div>
                                 )}
                                 {step.content && (
-                                  <div className="max-h-60 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                                  <div className="max-h-96 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
                                     <Markdown>{step.content}</Markdown>
                                   </div>
                                 )}
                                 {step.status === "error" && step.statusMessage && (
                                   <p className="text-xs text-destructive">{step.statusMessage}</p>
                                 )}
-                              </CardContent>
+                              </div>
                             </CollapsibleContent>
                           </Collapsible>
-                        </Card>
+                        </div>
                       );
                     })}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ));
             })()}
             <div ref={bottomRef} />

@@ -55,6 +55,20 @@ const PHASE_LABELS: Record<string, string> = {
   risk: "analysis.phaseRisk",
   final: "analysis.phaseFinal",
 };
+const PHASE_COLORS: Record<string, string> = {
+  analysts: "border-cyan-500/50",
+  debate: "border-purple-500/50",
+  decision: "border-yellow-500/50",
+  risk: "border-red-500/50",
+  final: "border-emerald-500/50",
+};
+const PHASE_TITLE_COLORS: Record<string, string> = {
+  analysts: "text-cyan-500",
+  debate: "text-purple-500",
+  decision: "text-yellow-500",
+  risk: "text-red-500",
+  final: "text-emerald-500",
+};
 
 function signalColor(s: string) {
   if (s === "BUY" || s === "OVERWEIGHT") return "bg-emerald-500";
@@ -151,38 +165,38 @@ export default function AnalysisHistory() {
           ) : (
             <div className="space-y-6">
               {PHASE_ORDER.filter((p) => grouped[p]).map((phase) => (
-                <div key={phase} className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t(PHASE_LABELS[phase])}
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Card key={phase} className={`border-2 ${PHASE_COLORS[phase]}`}>
+                  <CardHeader className="py-3">
+                    <CardTitle className={`text-sm uppercase tracking-wider ${PHASE_TITLE_COLORS[phase]}`}>
+                      {t(PHASE_LABELS[phase])}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-0">
                     {grouped[phase].map((step) => {
                       const key = `${step.phase}-${step.agent}`;
                       const isOpen = expandedCards.has(key);
                       return (
-                        <Card key={key}>
+                        <div key={key} className="rounded-md border border-border">
                           <Collapsible open={isOpen} onOpenChange={() => toggleCard(key)}>
                             <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm">✅</span>
-                                  <span className="text-sm font-medium flex-1">{step.agent}</span>
-                                </div>
-                              </CardHeader>
+                              <div className="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-muted/50">
+                                <span className="text-sm">✅</span>
+                                <span className="text-sm font-medium flex-1">{step.agent}</span>
+                              </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
-                              <CardContent className="pt-0">
-                                <div className="max-h-60 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                              <div className="px-4 pb-3">
+                                <div className="max-h-96 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
                                   <Markdown>{step.content}</Markdown>
                                 </div>
-                              </CardContent>
+                              </div>
                             </CollapsibleContent>
                           </Collapsible>
-                        </Card>
+                        </div>
                       );
                     })}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
