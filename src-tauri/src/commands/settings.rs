@@ -33,7 +33,8 @@ pub fn get_settings(app: AppHandle) -> Result<AppSettings, String> {
         return Ok(AppSettings::default());
     }
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&content).map_err(|e| e.to_string())
+    // If format changed, fall back to defaults instead of erroring
+    Ok(serde_json::from_str(&content).unwrap_or_default())
 }
 
 #[tauri::command]
