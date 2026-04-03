@@ -23,6 +23,18 @@ struct AnthropicRequest {
     system: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f64>,
+    /// Extended thinking configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking: Option<ThinkingConfig>,
+}
+
+#[derive(Serialize)]
+struct ThinkingConfig {
+    #[serde(rename = "type")]
+    thinking_type: String,
+    /// Budget tokens for thinking (required when type = "enabled")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    budget_tokens: Option<u32>,
 }
 
 #[derive(Serialize)]
@@ -134,12 +146,28 @@ impl LlmClient for AnthropicClient {
             })
             .collect();
 
+        // Map effort level to thinking config
+        let thinking = self.config.effort.as_deref().map(|effort| {
+            let budget = match effort {
+                "low" => 2048,
+                "medium" => 8192,
+                "high" => 32768,
+                _ => 8192,
+            };
+            ThinkingConfig {
+                thinking_type: "enabled".to_string(),
+                budget_tokens: Some(budget),
+            }
+        });
+
         let request = AnthropicRequest {
             model: self.config.model.clone(),
             messages: api_messages,
             max_tokens: self.config.max_tokens.unwrap_or(4096),
             system,
-            temperature: self.config.temperature,
+            // Temperature must be unset when thinking is enabled
+            temperature: if thinking.is_some() { None } else { self.config.temperature },
+            thinking,
         };
 
         let resp = self.client.post(&url).json(&request).send().await?;

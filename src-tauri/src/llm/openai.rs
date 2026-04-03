@@ -21,6 +21,8 @@ struct OpenAIRequest {
     temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_effort: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -121,6 +123,7 @@ impl LlmClient for OpenAIClient {
                 .collect(),
             temperature: self.config.temperature,
             max_tokens: self.config.max_tokens,
+            reasoning_effort: self.config.reasoning_effort.clone(),
         };
 
         let resp = self.client.post(&url).json(&request).send().await?;

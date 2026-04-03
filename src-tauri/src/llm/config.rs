@@ -30,6 +30,12 @@ pub struct LlmConfig {
     pub base_url: Option<String>,
     pub temperature: Option<f64>,
     pub max_tokens: Option<u32>,
+    /// OpenAI reasoning effort: "low", "medium", "high"
+    pub reasoning_effort: Option<String>,
+    /// Anthropic extended thinking effort: "low", "medium", "high"
+    pub effort: Option<String>,
+    /// Google thinking level: "minimal", "low", "medium", "high"
+    pub thinking_level: Option<String>,
 }
 
 impl Default for LlmConfig {
@@ -41,6 +47,9 @@ impl Default for LlmConfig {
             base_url: None,
             temperature: Some(0.7),
             max_tokens: Some(4096),
+            reasoning_effort: None,
+            effort: None,
+            thinking_level: None,
         }
     }
 }

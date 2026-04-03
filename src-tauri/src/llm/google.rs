@@ -43,6 +43,12 @@ struct GenerationConfig {
     temperature: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     max_output_tokens: Option<u32>,
+    /// Gemini 3: "minimal", "low", "medium", "high"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking_level: Option<String>,
+    /// Gemini 2.5: -1 (dynamic/high), 0 (disabled)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking_budget: Option<i32>,
 }
 
 #[derive(Deserialize)]
@@ -149,9 +155,33 @@ impl LlmClient for GoogleClient {
         let request = GoogleRequest {
             contents,
             system_instruction,
-            generation_config: Some(GenerationConfig {
-                temperature: self.config.temperature,
-                max_output_tokens: self.config.max_tokens,
+            generation_config: Some({
+                // Map thinking_level per model family (same logic as TradingAgents)
+                let model_lower = self.config.model.to_lowercase();
+                let mut thinking_level_val = None;
+                let mut thinking_budget_val = None;
+
+                if let Some(ref level) = self.config.thinking_level {
+                    if model_lower.contains("gemini-3") {
+                        // Gemini 3 Pro doesn't support "minimal"
+                        let lvl = if model_lower.contains("pro") && level == "minimal" {
+                            "low".to_string()
+                        } else {
+                            level.clone()
+                        };
+                        thinking_level_val = Some(lvl);
+                    } else {
+                        // Gemini 2.5: map to thinking_budget
+                        thinking_budget_val = Some(if level == "high" { -1 } else { 0 });
+                    }
+                }
+
+                GenerationConfig {
+                    temperature: self.config.temperature,
+                    max_output_tokens: self.config.max_tokens,
+                    thinking_level: thinking_level_val,
+                    thinking_budget: thinking_budget_val,
+                }
             }),
         };
 
