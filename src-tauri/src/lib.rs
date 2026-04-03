@@ -2,6 +2,7 @@ use tauri::Manager;
 
 mod commands;
 mod db;
+pub mod llm;
 mod models;
 mod services;
 
@@ -35,6 +36,8 @@ pub fn run() {
             commands::stock::search_stocks,
             commands::sector::get_sectors,
             commands::sector::get_sector_stocks,
+            commands::llm::llm_chat,
+            commands::llm::llm_models,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
