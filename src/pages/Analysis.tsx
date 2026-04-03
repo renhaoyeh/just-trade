@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import Markdown from "react-markdown";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -409,10 +410,8 @@ export default function Analysis() {
                                   </div>
                                 )}
                                 {step.content && (
-                                  <div className="max-h-60 overflow-y-auto">
-                                    <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
-                                      {step.content}
-                                    </pre>
+                                  <div className="max-h-60 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                                    <Markdown>{step.content}</Markdown>
                                   </div>
                                 )}
                                 {step.status === "error" && step.statusMessage && (

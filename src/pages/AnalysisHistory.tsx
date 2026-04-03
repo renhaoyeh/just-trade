@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Markdown from "react-markdown";
 import { useTranslation } from "react-i18next";
 import {
   Card,
@@ -171,10 +172,8 @@ export default function AnalysisHistory() {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                               <CardContent className="pt-0">
-                                <div className="max-h-60 overflow-y-auto">
-                                  <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
-                                    {step.content}
-                                  </pre>
+                                <div className="max-h-60 overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                                  <Markdown>{step.content}</Markdown>
                                 </div>
                               </CardContent>
                             </CollapsibleContent>
