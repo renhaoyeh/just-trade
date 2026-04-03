@@ -103,3 +103,47 @@ export interface FugleWsStatus {
   connected: boolean;
   message: string;
 }
+
+// ---------------------------------------------------------------------------
+// Backtest
+// ---------------------------------------------------------------------------
+
+export interface BacktestTrade {
+  date: string;
+  action: string;
+  price: number;
+  shares: number;
+  cost: number;
+  pnl: number;
+  balance: number;
+}
+
+export interface EquityPoint {
+  date: string;
+  equity: number;
+  cash: number;
+  position_value: number;
+}
+
+export interface BacktestMetrics {
+  initial_capital: number;
+  final_equity: number;
+  total_return_pct: number;
+  max_drawdown_pct: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate_pct: number;
+  total_commission: number;
+  total_tax: number;
+  start_date: string;
+  end_date: string;
+  trading_days: number;
+}
+
+export interface BacktestResult {
+  symbol: string;
+  metrics: BacktestMetrics;
+  trades: BacktestTrade[];
+  equity_curve: EquityPoint[];
+}

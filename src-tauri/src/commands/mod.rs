@@ -1,4 +1,5 @@
 pub mod analysis;
+pub mod backtest;
 pub mod fugle;
 pub mod greet;
 pub mod health;

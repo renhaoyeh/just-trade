@@ -1,0 +1,321 @@
+use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
+
+use crate::models::stock_price::StockPrice;
+
+use super::strategy::Signal;
+
+/// Taiwan stock trading costs.
+const TW_COMMISSION_RATE: f64 = 0.001425; // 0.1425% each way
+const TW_TAX_RATE: f64 = 0.003; // 0.3% on sell
+
+/// Configuration for the backtest engine.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BacktestConfig {
+    pub initial_capital: f64,
+    pub commission_rate: f64,
+    pub tax_rate: f64,
+}
+
+impl Default for BacktestConfig {
+    fn default() -> Self {
+        Self {
+            initial_capital: 1_000_000.0,
+            commission_rate: TW_COMMISSION_RATE,
+            tax_rate: TW_TAX_RATE,
+        }
+    }
+}
+
+/// A single trade record.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Trade {
+    pub date: NaiveDate,
+    pub action: String, // "buy" | "sell"
+    pub price: f64,
+    pub shares: i64,
+    pub cost: f64,    // commission + tax
+    pub pnl: f64,     // realized P&L for sells
+    pub balance: f64,  // cash after trade
+}
+
+/// A daily equity snapshot.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EquityPoint {
+    pub date: NaiveDate,
+    pub equity: f64,
+    pub cash: f64,
+    pub position_value: f64,
+}
+
+/// Summary metrics for a completed backtest.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BacktestMetrics {
+    pub initial_capital: f64,
+    pub final_equity: f64,
+    pub total_return_pct: f64,
+    pub max_drawdown_pct: f64,
+    pub total_trades: usize,
+    pub winning_trades: usize,
+    pub losing_trades: usize,
+    pub win_rate_pct: f64,
+    pub total_commission: f64,
+    pub total_tax: f64,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub trading_days: usize,
+}
+
+/// Full backtest result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BacktestResult {
+    pub symbol: String,
+    pub metrics: BacktestMetrics,
+    pub trades: Vec<Trade>,
+    pub equity_curve: Vec<EquityPoint>,
+}
+
+/// Run a backtest given price data and pre-computed signals.
+pub fn run_backtest(
+    symbol: &str,
+    prices: &[StockPrice],
+    signals: &[Signal],
+    config: &BacktestConfig,
+) -> BacktestResult {
+    assert_eq!(prices.len(), signals.len());
+
+    let mut cash = config.initial_capital;
+    let mut shares: i64 = 0;
+    let mut avg_cost: f64 = 0.0;
+    let mut trades: Vec<Trade> = Vec::new();
+    let mut equity_curve: Vec<EquityPoint> = Vec::new();
+    let mut total_commission = 0.0;
+    let mut total_tax = 0.0;
+
+    for (i, (price, signal)) in prices.iter().zip(signals.iter()).enumerate() {
+        match signal {
+            Signal::Buy if shares == 0 => {
+                // Buy as many shares as we can afford (台股 1 張 = 1000 股)
+                let lot_size = 1000_i64;
+                let max_lots = (cash / (price.close * lot_size as f64 * (1.0 + config.commission_rate))) as i64;
+                if max_lots > 0 {
+                    let buy_shares = max_lots * lot_size;
+                    let amount = price.close * buy_shares as f64;
+                    let commission = (amount * config.commission_rate).max(20.0);
+                    total_commission += commission;
+                    cash -= amount + commission;
+                    avg_cost = price.close;
+                    shares = buy_shares;
+
+                    trades.push(Trade {
+                        date: price.date,
+                        action: "buy".into(),
+                        price: price.close,
+                        shares: buy_shares,
+                        cost: commission,
+                        pnl: 0.0,
+                        balance: cash,
+                    });
+                }
+            }
+            Signal::Sell if shares > 0 => {
+                let amount = price.close * shares as f64;
+                let commission = (amount * config.commission_rate).max(20.0);
+                let tax = amount * config.tax_rate;
+                let pnl = (price.close - avg_cost) * shares as f64 - commission - tax;
+                total_commission += commission;
+                total_tax += tax;
+                cash += amount - commission - tax;
+
+                trades.push(Trade {
+                    date: price.date,
+                    action: "sell".into(),
+                    price: price.close,
+                    shares,
+                    cost: commission + tax,
+                    pnl,
+                    balance: cash,
+                });
+
+                shares = 0;
+                avg_cost = 0.0;
+            }
+            _ => {}
+        }
+
+        // Record daily equity
+        let position_value = shares as f64 * price.close;
+        equity_curve.push(EquityPoint {
+            date: price.date,
+            equity: cash + position_value,
+            cash,
+            position_value,
+        });
+
+        // Force sell on last day if still holding
+        if i == prices.len() - 1 && shares > 0 {
+            let amount = price.close * shares as f64;
+            let commission = (amount * config.commission_rate).max(20.0);
+            let tax = amount * config.tax_rate;
+            let pnl = (price.close - avg_cost) * shares as f64 - commission - tax;
+            total_commission += commission;
+            total_tax += tax;
+            cash += amount - commission - tax;
+
+            trades.push(Trade {
+                date: price.date,
+                action: "sell".into(),
+                price: price.close,
+                shares,
+                cost: commission + tax,
+                pnl,
+                balance: cash,
+            });
+
+            shares = 0;
+
+            // Update last equity point
+            if let Some(last) = equity_curve.last_mut() {
+                last.equity = cash;
+                last.cash = cash;
+                last.position_value = 0.0;
+            }
+        }
+    }
+
+    // Compute metrics
+    let final_equity = equity_curve.last().map(|e| e.equity).unwrap_or(config.initial_capital);
+    let total_return_pct = (final_equity / config.initial_capital - 1.0) * 100.0;
+    let max_drawdown_pct = compute_max_drawdown(&equity_curve);
+
+    let sell_trades: Vec<&Trade> = trades.iter().filter(|t| t.action == "sell").collect();
+    let winning = sell_trades.iter().filter(|t| t.pnl > 0.0).count();
+    let losing = sell_trades.iter().filter(|t| t.pnl <= 0.0).count();
+    let total_sell_trades = sell_trades.len();
+    let win_rate = if total_sell_trades > 0 {
+        winning as f64 / total_sell_trades as f64 * 100.0
+    } else {
+        0.0
+    };
+
+    let metrics = BacktestMetrics {
+        initial_capital: config.initial_capital,
+        final_equity,
+        total_return_pct,
+        max_drawdown_pct,
+        total_trades: trades.len(),
+        winning_trades: winning,
+        losing_trades: losing,
+        win_rate_pct: win_rate,
+        total_commission,
+        total_tax,
+        start_date: prices.first().map(|p| p.date).unwrap_or_default(),
+        end_date: prices.last().map(|p| p.date).unwrap_or_default(),
+        trading_days: prices.len(),
+    };
+
+    BacktestResult {
+        symbol: symbol.to_string(),
+        metrics,
+        trades,
+        equity_curve,
+    }
+}
+
+/// Compute maximum drawdown percentage from equity curve.
+fn compute_max_drawdown(curve: &[EquityPoint]) -> f64 {
+    let mut peak = f64::MIN;
+    let mut max_dd = 0.0_f64;
+
+    for point in curve {
+        if point.equity > peak {
+            peak = point.equity;
+        }
+        let dd = (peak - point.equity) / peak * 100.0;
+        if dd > max_dd {
+            max_dd = dd;
+        }
+    }
+
+    max_dd
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    fn make_prices(closes: &[f64]) -> Vec<StockPrice> {
+        closes
+            .iter()
+            .enumerate()
+            .map(|(i, &c)| StockPrice {
+                id: i as i64,
+                symbol: "2330.TW".into(),
+                date: NaiveDate::from_ymd_opt(2024, 1, 1)
+                    .unwrap()
+                    .checked_add_signed(chrono::Duration::days(i as i64))
+                    .unwrap(),
+                open: c,
+                high: c,
+                low: c,
+                close: c,
+                volume: 1000,
+                adj_close: Some(c),
+                created_at: String::new(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn test_buy_and_sell() {
+        let prices = make_prices(&[100.0, 110.0, 105.0]);
+        let signals = vec![Signal::Buy, Signal::Hold, Signal::Sell];
+        let config = BacktestConfig {
+            initial_capital: 1_000_000.0,
+            ..Default::default()
+        };
+
+        let result = run_backtest("TEST", &prices, &signals, &config);
+        assert_eq!(result.trades.len(), 2);
+        assert_eq!(result.trades[0].action, "buy");
+        assert_eq!(result.trades[1].action, "sell");
+        assert_eq!(result.equity_curve.len(), 3);
+    }
+
+    #[test]
+    fn test_no_signals() {
+        let prices = make_prices(&[100.0, 110.0, 120.0]);
+        let signals = vec![Signal::Hold, Signal::Hold, Signal::Hold];
+        let config = BacktestConfig::default();
+
+        let result = run_backtest("TEST", &prices, &signals, &config);
+        assert!(result.trades.is_empty());
+        assert!((result.metrics.total_return_pct).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_force_sell_on_last_day() {
+        let prices = make_prices(&[100.0, 110.0, 120.0]);
+        let signals = vec![Signal::Buy, Signal::Hold, Signal::Hold];
+        let config = BacktestConfig::default();
+
+        let result = run_backtest("TEST", &prices, &signals, &config);
+        // Should have buy + forced sell
+        assert_eq!(result.trades.len(), 2);
+        assert_eq!(result.trades[1].action, "sell");
+    }
+
+    #[test]
+    fn test_max_drawdown() {
+        let curve = vec![
+            EquityPoint { date: NaiveDate::default(), equity: 100.0, cash: 100.0, position_value: 0.0 },
+            EquityPoint { date: NaiveDate::default(), equity: 120.0, cash: 120.0, position_value: 0.0 },
+            EquityPoint { date: NaiveDate::default(), equity: 90.0, cash: 90.0, position_value: 0.0 },
+            EquityPoint { date: NaiveDate::default(), equity: 110.0, cash: 110.0, position_value: 0.0 },
+        ];
+        let dd = compute_max_drawdown(&curve);
+        // Peak = 120, trough = 90 → dd = 25%
+        assert!((dd - 25.0).abs() < 1e-9);
+    }
+}

@@ -1,6 +1,7 @@
 use tauri::Manager;
 
 pub mod agents;
+pub mod backtest;
 mod commands;
 pub mod dataflows;
 mod db;
@@ -55,6 +56,7 @@ pub fn run() {
             commands::fugle::fugle_ws_subscribe,
             commands::fugle::fugle_ws_unsubscribe,
             commands::fugle::fugle_ws_status,
+            commands::backtest::run_backtest,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

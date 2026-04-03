@@ -156,3 +156,24 @@ export async function fugleWsUnsubscribe(
 export async function fugleWsStatus(): Promise<boolean> {
   return invoke("fugle_ws_status");
 }
+
+// ---------------------------------------------------------------------------
+// Backtest
+// ---------------------------------------------------------------------------
+
+import type { BacktestResult } from "@/types/stock";
+
+export interface RunBacktestParams {
+  symbol: string;
+  start_date: string;
+  end_date: string;
+  initial_capital: number;
+  short_period: number;
+  long_period: number;
+}
+
+export async function runBacktest(
+  params: RunBacktestParams
+): Promise<BacktestResult> {
+  return invoke("run_backtest", { params });
+}
