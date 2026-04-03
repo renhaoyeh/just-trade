@@ -16,6 +16,8 @@
 - Commit per logical step (not one giant commit)
 - Each commit should have passing tests
 - Follow conventional commit format: `feat:`, `fix:`, `chore:`, `test:`, etc.
+- **Plan before coding**: break the task into independent logical steps and commit after each step, ensuring every commit is runnable and testable
+- Typical split: `1. data model / migration` → `2. backend logic` → `3. frontend UI` → `4. tests` → `5. i18n / cleanup`
 
 ## i18n
 - All user-facing strings must use `t("key")` from `react-i18next`, never hardcode text in components
