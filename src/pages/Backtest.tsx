@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BacktestChart } from "@/components/charts/BacktestChart";
+import { BacktestChart, CompareBacktestChart, type StrategyTradeEntry } from "@/components/charts/BacktestChart";
 import { runBacktest } from "@/services/stockService";
 import type { StrategyConfig } from "@/services/stockService";
 import type { BacktestResult } from "@/types/stock";
@@ -91,6 +91,7 @@ export default function Backtest() {
   // Compare mode state
   const [compareResults, setCompareResults] = useState<CompareEntry[]>([]);
   const [comparing, setComparing] = useState(false);
+  const [chartStrategies, setChartStrategies] = useState<StrategyTradeEntry[]>([]);
 
   const handleStrategyChange = (type: StrategyType) => {
     setStrategyType(type);
@@ -154,6 +155,14 @@ export default function Backtest() {
     }
 
     setCompareResults(entries);
+    setChartStrategies(
+      entries.map(({ strategy, result: r }) => ({
+        name: t(`backtest.strategies.${strategy}`),
+        color: STRATEGY_COLORS[strategy],
+        trades: r.trades,
+        enabled: true,
+      }))
+    );
     if (errors.length > 0) {
       setError(errors.join("\n"));
     }
@@ -358,7 +367,7 @@ export default function Backtest() {
               </CardContent>
             </Card>
 
-            {/* K-line charts with buy/sell markers per strategy */}
+            {/* K-line chart with toggleable strategy markers */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">
@@ -366,24 +375,15 @@ export default function Backtest() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue={compareResults[0]?.strategy}>
-                  <TabsList>
-                    {compareResults.map(({ strategy }) => (
-                      <TabsTrigger key={strategy} value={strategy}>
-                        {t(`backtest.strategies.${strategy}`)}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {compareResults.map(({ strategy, result: r }) => (
-                    <TabsContent key={strategy} value={strategy}>
-                      <BacktestChart
-                        prices={r.prices}
-                        trades={r.trades}
-                        equityCurve={r.equity_curve}
-                      />
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                <CompareBacktestChart
+                  prices={compareResults[0].result.prices}
+                  strategies={chartStrategies}
+                  onToggle={(i) =>
+                    setChartStrategies((prev) =>
+                      prev.map((s, j) => (j === i ? { ...s, enabled: !s.enabled } : s))
+                    )
+                  }
+                />
               </CardContent>
             </Card>
 

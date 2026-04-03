@@ -7,6 +7,9 @@ import Backtest from "./Backtest";
 
 vi.mock("@/components/charts/BacktestChart", () => ({
   BacktestChart: () => <div data-testid="backtest-chart" />,
+  CompareBacktestChart: ({ strategies }: { strategies: { name: string; enabled: boolean }[] }) => (
+    <div data-testid="compare-chart">{strategies.filter((s: { enabled: boolean }) => s.enabled).length} strategies</div>
+  ),
 }));
 
 const mockedInvoke = vi.mocked(invoke);
