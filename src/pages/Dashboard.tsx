@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 const portfolioData = [
   { symbol: "AAPL", name: "Apple Inc.", price: 198.45, change: +2.34, changePercent: +1.19, shares: 50, value: 9922.5 },
@@ -78,7 +79,10 @@ export default function Dashboard() {
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
             <h1 className="text-sm font-semibold">Dashboard</h1>
-            <Badge variant="outline" className="ml-auto">Live</Badge>
+            <div className="ml-auto flex items-center gap-2">
+              <Badge variant="outline">Live</Badge>
+              <ThemeToggle />
+            </div>
           </header>
 
           {/* Main content */}
