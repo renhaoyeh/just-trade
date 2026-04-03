@@ -1,3 +1,5 @@
+pub mod stock_prices;
+
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
