@@ -5,6 +5,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { renderWithProviders } from "@/tests/render-helpers";
 import Dashboard from "./Dashboard";
 
+vi.mock("@/components/charts/CandlestickChart", () => ({
+  CandlestickChart: () => <div data-testid="candlestick-chart" />,
+}));
+
 function renderDashboard() {
   return renderWithProviders(<Dashboard />);
 }
@@ -117,8 +121,7 @@ describe("Dashboard - Chart Empty/Loading States", () => {
       return {};
     });
     renderDashboard();
-    const chartCard = await screen.findByText(/股價走勢/);
-    expect(chartCard).toBeInTheDocument();
+    expect(await screen.findByTestId("candlestick-chart")).toBeInTheDocument();
     expect(screen.queryByText("無股價資料")).not.toBeInTheDocument();
   });
 });

@@ -23,15 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { CandlestickChart } from "@/components/charts/CandlestickChart";
 
 import type { StockPrice, StockInfo, StockNews } from "@/types/stock";
 import {
@@ -173,13 +165,6 @@ export default function Dashboard() {
     setSearchSymbol("");
   };
 
-  // Chart data
-  const chartData = priceHistory.map((p) => ({
-    date: p.date,
-    close: p.close,
-    volume: p.volume,
-  }));
-
   // Latest price info
   const latestPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : null;
   const prevPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : null;
@@ -304,44 +289,16 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                {loading && chartData.length === 0 ? (
+                {loading && priceHistory.length === 0 ? (
                   <div className="flex h-75 items-center justify-center text-muted-foreground">
                     {t("chart.loading")}
                   </div>
-                ) : chartData.length === 0 ? (
+                ) : priceHistory.length === 0 ? (
                   <div className="flex h-75 items-center justify-center text-muted-foreground">
                     {t("chart.empty")}
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 12 }}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis
-                        domain={["auto", "auto"]}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "var(--color-popover)",
-                          color: "var(--color-popover-foreground)",
-                          border: "1px solid var(--color-border)",
-                          borderRadius: 0,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="close"
-                        stroke="var(--color-primary)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  <CandlestickChart data={priceHistory} height={400} />
                 )}
               </CardContent>
             </Card>
