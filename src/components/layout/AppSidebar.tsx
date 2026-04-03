@@ -6,6 +6,7 @@ import {
   GearSix,
   SignOut,
   Lightning,
+  Buildings,
 } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -23,13 +24,15 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation } from "react-router";
 
 const mainNav = [
-  { titleKey: "nav.dashboard", icon: ChartLine, isActive: true },
-  { titleKey: "nav.portfolio", icon: Wallet },
-  { titleKey: "nav.trade", icon: Lightning, badgeKey: "nav.new" },
-  { titleKey: "nav.history", icon: ClockCounterClockwise },
-  { titleKey: "nav.watchlist", icon: Binoculars },
+  { titleKey: "nav.dashboard", icon: ChartLine, path: "/" },
+  { titleKey: "nav.sectors", icon: Buildings, path: "/sectors" },
+  { titleKey: "nav.portfolio", icon: Wallet, path: "/portfolio" },
+  { titleKey: "nav.trade", icon: Lightning, path: "/trade", badgeKey: "nav.new" },
+  { titleKey: "nav.history", icon: ClockCounterClockwise, path: "/history" },
+  { titleKey: "nav.watchlist", icon: Binoculars, path: "/watchlist" },
 ];
 
 const bottomNav = [
@@ -39,6 +42,8 @@ const bottomNav = [
 
 export function AppSidebar() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <Sidebar collapsible="icon">
@@ -69,7 +74,12 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     tooltip={t(item.titleKey)}
-                    isActive={item.isActive}
+                    isActive={
+                      item.path === "/"
+                        ? location.pathname === "/"
+                        : location.pathname.startsWith(item.path)
+                    }
+                    onClick={() => navigate(item.path)}
                   >
                     <item.icon className="size-4" />
                     <span>{t(item.titleKey)}</span>

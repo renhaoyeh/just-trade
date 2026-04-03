@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import {
   Card,
   CardContent,
@@ -20,13 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import {
   LineChart,
@@ -99,8 +94,11 @@ const RANGE_OPTIONS = [
 type RangeLabel = (typeof RANGE_OPTIONS)[number]["label"];
 
 export default function Dashboard() {
+  const [searchParams] = useSearchParams();
   const [searchSymbol, setSearchSymbol] = useState("");
-  const [selectedSymbol, setSelectedSymbol] = useState("2330.TW");
+  const [selectedSymbol, setSelectedSymbol] = useState(
+    searchParams.get("symbol") || "2330.TW"
+  );
   const [selectedRange, setSelectedRange] = useState<RangeLabel>("3M");
   const [priceHistory, setPriceHistory] = useState<StockPrice[]>([]);
   const [stockInfo, setStockInfo] = useState<StockInfo | null>(null);
@@ -189,11 +187,8 @@ export default function Dashboard() {
   const priceChangePercent = prevPrice ? (priceChange / prevPrice.close) * 100 : 0;
 
   return (
-    <TooltipProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          {/* Header */}
+    <>
+      {/* Header */}
           <header className="flex items-center gap-2 border-b px-4 py-3">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
@@ -504,8 +499,6 @@ export default function Dashboard() {
               </TabsContent>
             </Tabs>
           </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+    </>
   );
 }
