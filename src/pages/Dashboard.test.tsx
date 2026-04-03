@@ -121,9 +121,9 @@ describe("Dashboard - Chart Empty/Loading States", () => {
 describe("Dashboard - i18n", () => {
   it("renders tab labels from i18n", () => {
     render(<Dashboard />);
-    expect(screen.getByText("自選清單")).toBeInTheDocument();
-    expect(screen.getByText("歷史股價")).toBeInTheDocument();
-    expect(screen.getByText("相關新聞")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "自選清單" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "歷史股價" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "相關新聞" })).toBeInTheDocument();
   });
 
   it("renders search button from i18n", () => {

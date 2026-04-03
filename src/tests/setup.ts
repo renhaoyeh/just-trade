@@ -1,6 +1,5 @@
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
-import "@/i18n";
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
@@ -20,3 +19,6 @@ Object.defineProperty(window, "matchMedia", {
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(() => Promise.resolve([])),
 }));
+
+// Initialize i18n for tests
+import "@/i18n";

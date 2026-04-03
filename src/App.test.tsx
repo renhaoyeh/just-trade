@@ -5,7 +5,7 @@ import App from "@/App";
 describe("App", () => {
   it("renders the dashboard header", () => {
     render(<App />);
-    const headings = screen.getAllByText("Dashboard");
+    const headings = screen.getAllByText("總覽");
     expect(headings.length).toBeGreaterThan(0);
   });
 
@@ -24,8 +24,8 @@ describe("App", () => {
 
   it("renders tab triggers", () => {
     render(<App />);
-    expect(screen.getByText("自選清單")).toBeInTheDocument();
-    expect(screen.getByText("歷史股價")).toBeInTheDocument();
-    expect(screen.getByText("相關新聞")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "自選清單" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "歷史股價" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "相關新聞" })).toBeInTheDocument();
   });
 });
