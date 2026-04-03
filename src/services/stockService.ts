@@ -92,6 +92,7 @@ export interface PipelineConfig {
   enable_news_analyst: boolean;
   enable_fundamentals_analyst: boolean;
   enable_social_analyst: boolean;
+  cooldown_secs: number;
 }
 
 export async function runAnalysis(

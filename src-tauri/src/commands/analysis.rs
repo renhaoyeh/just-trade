@@ -23,6 +23,8 @@ pub struct PipelineConfig {
     pub enable_news_analyst: bool,
     pub enable_fundamentals_analyst: bool,
     pub enable_social_analyst: bool,
+    /// Seconds to wait between each agent call (for rate-limited free APIs)
+    pub cooldown_secs: u64,
 }
 
 impl Default for PipelineConfig {
@@ -36,6 +38,7 @@ impl Default for PipelineConfig {
             enable_news_analyst: true,
             enable_fundamentals_analyst: true,
             enable_social_analyst: false,
+            cooldown_secs: 0,
         }
     }
 }
@@ -76,11 +79,16 @@ fn emit_progress(app: &AppHandle, phase: &str, agent: &str, status: &str, messag
     });
 }
 
+const MAX_RETRIES: u32 = 3;
+const RETRY_BASE_DELAY_SECS: u64 = 15;
+
 async fn call_agent(
+    app: &AppHandle,
     config: &LlmConfig,
     agent_id: &str,
     user_message: &str,
     vars: &HashMap<String, String>,
+    cooldown_secs: u64,
 ) -> Result<String, LlmError> {
     let agent = agents::get_agent(agent_id)
         .ok_or_else(|| LlmError::Api(format!("Unknown agent: {agent_id}")))?;
@@ -92,8 +100,38 @@ async fn call_agent(
     ];
 
     let client = create_client(config.clone())?;
-    let resp = client.chat(&messages).await?;
-    Ok(resp.content)
+
+    let mut last_err = LlmError::Api("Unknown error".into());
+    for attempt in 0..=MAX_RETRIES {
+        if attempt > 0 {
+            let delay = RETRY_BASE_DELAY_SECS * 2u64.pow(attempt - 1);
+            eprintln!("Rate limited, retrying in {delay}s (attempt {attempt}/{MAX_RETRIES})");
+            tokio::time::sleep(std::time::Duration::from_secs(delay)).await;
+        }
+        match client.chat(&messages).await {
+            Ok(resp) => {
+                cooldown(app, cooldown_secs).await;
+                return Ok(resp.content);
+            }
+            Err(LlmError::Api(msg)) if msg.contains("429") || msg.to_lowercase().contains("rate limit") => {
+                last_err = LlmError::Api(msg);
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Err(last_err)
+}
+
+async fn cooldown(app: &AppHandle, secs: u64) {
+    if secs > 0 {
+        let _ = app.emit("analysis-progress", AnalysisProgress {
+            phase: "cooldown".to_string(),
+            agent: String::new(),
+            status: "running".to_string(),
+            message: Some(format!("Waiting {secs}s (rate limit)")),
+        });
+        tokio::time::sleep(std::time::Duration::from_secs(secs)).await;
+    }
 }
 
 #[tauri::command]
@@ -136,7 +174,7 @@ pub async fn run_analysis(
             continue;
         }
         emit_progress(&app, "analysts", name, "running", None);
-        match call_agent(quick, agent_id, &prompt, &HashMap::new()).await {
+        match call_agent(&app, quick, agent_id, &prompt, &HashMap::new(), pipeline_config.cooldown_secs).await {
             Ok(report) => {
                 match *field {
                     "market" => result.market_report = report,
@@ -171,7 +209,7 @@ pub async fn run_analysis(
         vars.insert("current_response".into(), current_response.clone());
         vars.insert("past_memory_str".into(), String::new());
 
-        match call_agent(quick, "bull_researcher", &prompt, &vars).await {
+        match call_agent(&app, quick, "bull_researcher", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 debate_history.push_str(&format!("\n\n**Bull (Round {}):**\n{resp}", round + 1));
                 current_response = resp.clone();
@@ -190,7 +228,7 @@ pub async fn run_analysis(
         vars.insert("history".into(), debate_history.clone());
         vars.insert("current_response".into(), current_response.clone());
 
-        match call_agent(quick, "bear_researcher", &prompt, &vars).await {
+        match call_agent(&app, quick, "bear_researcher", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 debate_history.push_str(&format!("\n\n**Bear (Round {}):**\n{resp}", round + 1));
                 current_response = resp.clone();
@@ -212,7 +250,7 @@ pub async fn run_analysis(
         vars.insert("past_memory_str".into(), String::new());
         vars.insert("instrument_context".into(), format!("Stock: {symbol}"));
 
-        match call_agent(deep, "research_manager", &prompt, &vars).await {
+        match call_agent(&app, deep, "research_manager", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 result.investment_decision = resp;
                 emit_progress(&app, "decision", "Research Manager", "done", None);
@@ -234,7 +272,7 @@ pub async fn run_analysis(
             "Based on the investment plan below, make your trading decision for {symbol}.\n\nInvestment Plan:\n{}",
             result.investment_decision
         );
-        match call_agent(deep, "trader", &trader_prompt, &vars).await {
+        match call_agent(&app, deep, "trader", &trader_prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 result.trader_plan = resp;
                 emit_progress(&app, "decision", "Trader", "done", None);
@@ -267,7 +305,7 @@ pub async fn run_analysis(
         vars.insert("current_conservative_response".into(), con_resp.clone());
         vars.insert("current_neutral_response".into(), neu_resp.clone());
 
-        match call_agent(quick, "aggressive_risk", &prompt, &vars).await {
+        match call_agent(&app, quick, "aggressive_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 risk_history.push_str(&format!("\n\n**Aggressive (Round {}):**\n{resp}", round + 1));
                 agg_resp = resp.clone();
@@ -286,7 +324,7 @@ pub async fn run_analysis(
         vars.insert("current_aggressive_response".into(), agg_resp.clone());
         vars.insert("current_neutral_response".into(), neu_resp.clone());
 
-        match call_agent(quick, "conservative_risk", &prompt, &vars).await {
+        match call_agent(&app, quick, "conservative_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 risk_history.push_str(&format!("\n\n**Conservative (Round {}):**\n{resp}", round + 1));
                 con_resp = resp.clone();
@@ -305,7 +343,7 @@ pub async fn run_analysis(
         vars.insert("current_aggressive_response".into(), agg_resp.clone());
         vars.insert("current_conservative_response".into(), con_resp.clone());
 
-        match call_agent(quick, "neutral_risk", &prompt, &vars).await {
+        match call_agent(&app, quick, "neutral_risk", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 risk_history.push_str(&format!("\n\n**Neutral (Round {}):**\n{resp}", round + 1));
                 neu_resp = resp.clone();
@@ -328,7 +366,7 @@ pub async fn run_analysis(
         vars.insert("past_memory_str".into(), String::new());
         vars.insert("history".into(), risk_history.clone());
 
-        match call_agent(deep, "portfolio_manager", &prompt, &vars).await {
+        match call_agent(&app, deep, "portfolio_manager", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 // Extract signal from response
                 let signal = extract_signal(&resp);

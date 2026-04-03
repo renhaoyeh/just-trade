@@ -66,6 +66,7 @@ export default function Analysis() {
   const [enableNews, setEnableNews] = useState(true);
   const [enableFundamentals, setEnableFundamentals] = useState(true);
   const [enableSocial, setEnableSocial] = useState(false);
+  const [cooldownSecs, setCooldownSecs] = useState(15);
 
   // Listen to progress events
   useEffect(() => {
@@ -143,6 +144,7 @@ export default function Analysis() {
       enable_news_analyst: enableNews,
       enable_fundamentals_analyst: enableFundamentals,
       enable_social_analyst: enableSocial,
+      cooldown_secs: cooldownSecs,
     };
 
     try {
@@ -152,7 +154,7 @@ export default function Analysis() {
     } finally {
       setRunning(false);
     }
-  }, [symbol, debateRounds, riskRounds, enableMarket, enableNews, enableFundamentals, enableSocial]);
+  }, [symbol, debateRounds, riskRounds, enableMarket, enableNews, enableFundamentals, enableSocial, cooldownSecs]);
 
   const statusIcon = (status: StepStatus["status"]) => {
     switch (status) {
@@ -213,6 +215,15 @@ export default function Analysis() {
                     type="number" min={1} max={5}
                     value={riskRounds}
                     onChange={(e) => setRiskRounds(Number(e.target.value) || 1)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("analysis.cooldown")}</label>
+                  <Input
+                    type="number" min={0} max={60}
+                    value={cooldownSecs}
+                    onChange={(e) => setCooldownSecs(Number(e.target.value) || 0)}
                   />
                 </div>
 

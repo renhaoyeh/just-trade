@@ -106,6 +106,7 @@
     "symbol": "Stock Symbol",
     "debateRounds": "Bull/Bear Debate Rounds",
     "riskRounds": "Risk Debate Rounds",
+    "cooldown": "Cooldown between steps (sec)",
     "analysts": "Enable Analysts",
     "marketAnalyst": "Technical Analysis",
     "newsAnalyst": "News Analysis",

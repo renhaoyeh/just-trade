@@ -106,6 +106,7 @@
     "symbol": "股票代號",
     "debateRounds": "多空辯論回合數",
     "riskRounds": "風險辯論回合數",
+    "cooldown": "每步間隔秒數 (防限流)",
     "analysts": "啟用分析師",
     "marketAnalyst": "技術面分析",
     "newsAnalyst": "新聞分析",
