@@ -8,6 +8,10 @@
 - Run `npm test` (Vitest) and ensure all tests pass before committing
 - Run `npm run test:e2e` (Playwright) for e2e tests when UI changes are involved
 
+### Build Verification
+- Before committing, ensure the app can actually run: `cargo check` (from src-tauri/) and `npm run dev`
+- DB migrations must have unique version numbers — check existing files in `src-tauri/migrations/` before creating new ones
+
 ### Commit Strategy
 - Commit per logical step (not one giant commit)
 - Each commit should have passing tests
