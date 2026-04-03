@@ -67,6 +67,7 @@ pub struct BacktestMetrics {
     pub total_invested: f64,
     pub final_equity: f64,
     pub total_return_pct: f64,
+    pub annualized_return_pct: f64,
     pub max_drawdown_pct: f64,
     pub total_trades: usize,
     pub winning_trades: usize,
@@ -85,6 +86,7 @@ pub struct BuyHoldBenchmark {
     pub start_price: f64,
     pub end_price: f64,
     pub return_pct: f64,
+    pub annualized_return_pct: f64,
 }
 
 /// Full backtest result.
@@ -249,6 +251,14 @@ pub fn run_backtest(
     } else {
         0.0
     };
+    let trading_days = prices.len();
+    let years = trading_days as f64 / 252.0;
+    let total_return_ratio = 1.0 + total_return_pct / 100.0;
+    let annualized_return_pct = if years > 0.0 && total_return_ratio > 0.0 {
+        (total_return_ratio.powf(1.0 / years) - 1.0) * 100.0
+    } else {
+        0.0
+    };
     let max_drawdown_pct = compute_max_drawdown(&equity_curve);
 
     let sell_trades: Vec<&Trade> = trades.iter().filter(|t| t.action == "sell").collect();
@@ -266,6 +276,7 @@ pub fn run_backtest(
         total_invested,
         final_equity,
         total_return_pct,
+        annualized_return_pct,
         max_drawdown_pct,
         total_trades: trades.len(),
         winning_trades: winning,
@@ -292,14 +303,22 @@ pub fn run_backtest(
 
     let start_price = prices.first().map(|p| p.close).unwrap_or(0.0);
     let end_price = prices.last().map(|p| p.close).unwrap_or(0.0);
+    let bh_return_pct = if start_price > 0.0 {
+        (end_price / start_price - 1.0) * 100.0
+    } else {
+        0.0
+    };
+    let bh_ratio = 1.0 + bh_return_pct / 100.0;
+    let bh_annualized = if years > 0.0 && bh_ratio > 0.0 {
+        (bh_ratio.powf(1.0 / years) - 1.0) * 100.0
+    } else {
+        0.0
+    };
     let benchmark = BuyHoldBenchmark {
         start_price,
         end_price,
-        return_pct: if start_price > 0.0 {
-            (end_price / start_price - 1.0) * 100.0
-        } else {
-            0.0
-        },
+        return_pct: bh_return_pct,
+        annualized_return_pct: bh_annualized,
     };
 
     BacktestResult {

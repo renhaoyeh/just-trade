@@ -130,6 +130,7 @@ export interface BacktestMetrics {
   total_invested: number;
   final_equity: number;
   total_return_pct: number;
+  annualized_return_pct: number;
   max_drawdown_pct: number;
   total_trades: number;
   winning_trades: number;
@@ -155,6 +156,7 @@ export interface BuyHoldBenchmark {
   start_price: number;
   end_price: number;
   return_pct: number;
+  annualized_return_pct: number;
 }
 
 export interface BacktestResult {

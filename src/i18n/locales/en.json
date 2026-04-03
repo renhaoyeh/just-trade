@@ -206,6 +206,7 @@
     "compareResult": "Strategy Comparison",
     "noTrades": "No trades",
     "totalReturn": "Total Return",
+    "annualized": "Annualized",
     "maxDrawdown": "Max Drawdown",
     "winRate": "Win Rate",
     "totalInvested": "Total Invested",

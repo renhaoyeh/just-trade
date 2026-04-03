@@ -206,6 +206,7 @@
     "compareResult": "策略比較",
     "noTrades": "無交易紀錄",
     "totalReturn": "總報酬率",
+    "annualized": "年化報酬率",
     "maxDrawdown": "最大回撤",
     "winRate": "勝率",
     "totalInvested": "實際投入",

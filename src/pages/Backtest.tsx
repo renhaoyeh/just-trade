@@ -288,6 +288,7 @@ export default function Backtest() {
                     <TableRow>
                       <TableHead>{t("backtest.strategy")}</TableHead>
                       <TableHead className="text-right">{t("backtest.totalReturn")}</TableHead>
+                      <TableHead className="text-right">{t("backtest.annualized")}</TableHead>
                       <TableHead className="text-right">{t("backtest.maxDrawdown")}</TableHead>
                       <TableHead className="text-right">{t("backtest.winRate")}</TableHead>
                       <TableHead className="text-right">{t("backtest.totalInvested")}</TableHead>
@@ -318,6 +319,16 @@ export default function Backtest() {
                         >
                           {r.metrics.total_return_pct >= 0 ? "+" : ""}
                           {r.metrics.total_return_pct.toFixed(2)}%
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono ${
+                            r.metrics.annualized_return_pct >= 0
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {r.metrics.annualized_return_pct >= 0 ? "+" : ""}
+                          {r.metrics.annualized_return_pct.toFixed(2)}%
                         </TableCell>
                         <TableCell className="text-right font-mono text-red-600 dark:text-red-400">
                           -{r.metrics.max_drawdown_pct.toFixed(2)}%
@@ -424,11 +435,16 @@ export default function Backtest() {
           <>
             <BenchmarkBanner benchmark={result.benchmark} symbol={symbol} initialCapital={initialCapital} t={t} />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <MetricCard
                 label={t("backtest.totalReturn")}
                 value={`${result.metrics.total_return_pct >= 0 ? "+" : ""}${result.metrics.total_return_pct.toFixed(2)}%`}
                 variant={result.metrics.total_return_pct >= 0 ? "up" : "down"}
+              />
+              <MetricCard
+                label={t("backtest.annualized")}
+                value={`${result.metrics.annualized_return_pct >= 0 ? "+" : ""}${result.metrics.annualized_return_pct.toFixed(2)}%`}
+                variant={result.metrics.annualized_return_pct >= 0 ? "up" : "down"}
               />
               <MetricCard
                 label={t("backtest.maxDrawdown")}
@@ -597,7 +613,7 @@ function BenchmarkBanner({
   initialCapital,
   t,
 }: {
-  benchmark: { start_price: number; end_price: number; return_pct: number };
+  benchmark: { start_price: number; end_price: number; return_pct: number; annualized_return_pct: number };
   symbol: string;
   initialCapital: number;
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -617,8 +633,13 @@ function BenchmarkBanner({
             ${formatNumber(initialCapital)} → ${formatNumber(finalValue)}
           </span>
         </div>
-        <div className={`text-xl font-bold ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-          {up ? "+" : ""}{benchmark.return_pct.toFixed(2)}%
+        <div className="text-right">
+          <div className={`text-xl font-bold ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            {up ? "+" : ""}{benchmark.return_pct.toFixed(2)}%
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t("backtest.annualized")} {benchmark.annualized_return_pct >= 0 ? "+" : ""}{benchmark.annualized_return_pct.toFixed(2)}%
+          </div>
         </div>
       </CardContent>
     </Card>

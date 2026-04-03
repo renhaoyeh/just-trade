@@ -17,12 +17,13 @@ function renderBacktest() {
 
 const mockBacktestResult = {
   symbol: "2330.TW",
-  benchmark: { start_price: 500, end_price: 555, return_pct: 11.0 },
+  benchmark: { start_price: 500, end_price: 555, return_pct: 11.0, annualized_return_pct: 5.5 },
   metrics: {
     initial_capital: 1000000,
     total_invested: 1000000,
     final_equity: 1050000,
     total_return_pct: 5.0,
+    annualized_return_pct: 2.5,
     max_drawdown_pct: 3.2,
     total_trades: 4,
     winning_trades: 2,
