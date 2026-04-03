@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::llm::agents;
-use crate::llm::client::create_client;
+use crate::llm::factory::create_client;
 use crate::llm::config::{ChatMessage, ChatResponse, LlmConfig, Role};
 
 /// Send a chat request to an LLM provider

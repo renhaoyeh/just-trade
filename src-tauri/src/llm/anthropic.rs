@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 
-use super::client::{LlmClient, LlmError};
+use super::base_client::{LlmClient, LlmError};
 use super::config::{ChatMessage, ChatResponse, LlmConfig, Role, TokenUsage};
 
 const DEFAULT_BASE_URL: &str = "https://api.anthropic.com";
@@ -209,5 +209,9 @@ impl LlmClient for AnthropicClient {
 
     fn model_name(&self) -> &str {
         &self.config.model
+    }
+
+    fn validate_model(&self) -> bool {
+        super::validators::validate_model(&self.config.provider, &self.config.model)
     }
 }
