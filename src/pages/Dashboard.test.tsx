@@ -1,8 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
+import { renderWithProviders } from "@/tests/render-helpers";
 import Dashboard from "./Dashboard";
+
+function renderDashboard() {
+  return renderWithProviders(<Dashboard />);
+}
 
 const mockedInvoke = vi.mocked(invoke);
 
@@ -25,20 +30,20 @@ describe("Dashboard - Range Selector", () => {
   });
 
   it("renders all range option buttons", () => {
-    render(<Dashboard />);
+    renderDashboard();
     for (const label of ["1M", "3M", "6M", "1Y", "5Y"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
   });
 
   it("defaults to 3M range", () => {
-    render(<Dashboard />);
+    renderDashboard();
     expect(screen.getByText(/近 3 個月/)).toBeInTheDocument();
   });
 
   it("updates description when range changes", async () => {
     const user = userEvent.setup();
-    render(<Dashboard />);
+    renderDashboard();
 
     await user.click(screen.getByRole("button", { name: "1Y" }));
     expect(screen.getByText(/近 1 年/)).toBeInTheDocument();
@@ -46,7 +51,7 @@ describe("Dashboard - Range Selector", () => {
 
   it("calls fetchStockHistory with correct date range for 1M", async () => {
     const user = userEvent.setup();
-    render(<Dashboard />);
+    renderDashboard();
 
     mockedInvoke.mockClear();
     await user.click(screen.getByRole("button", { name: "1M" }));
@@ -66,7 +71,7 @@ describe("Dashboard - Range Selector", () => {
 
   it("calls fetchStockHistory with correct date range for 1Y", async () => {
     const user = userEvent.setup();
-    render(<Dashboard />);
+    renderDashboard();
 
     mockedInvoke.mockClear();
     await user.click(screen.getByRole("button", { name: "1Y" }));
@@ -91,13 +96,13 @@ describe("Dashboard - Chart Empty/Loading States", () => {
   });
 
   it("shows chart card even when no data is loaded", () => {
-    render(<Dashboard />);
+    renderDashboard();
     expect(screen.getByText(/股價走勢/)).toBeInTheDocument();
   });
 
   it("shows empty message when data is empty and not loading", async () => {
     mockedInvoke.mockResolvedValue([]);
-    render(<Dashboard />);
+    renderDashboard();
     expect(await screen.findByText("無股價資料")).toBeInTheDocument();
   });
 
@@ -111,7 +116,7 @@ describe("Dashboard - Chart Empty/Loading States", () => {
       if (cmd === "fetch_stock_news") return [];
       return {};
     });
-    render(<Dashboard />);
+    renderDashboard();
     const chartCard = await screen.findByText(/股價走勢/);
     expect(chartCard).toBeInTheDocument();
     expect(screen.queryByText("無股價資料")).not.toBeInTheDocument();
@@ -120,19 +125,19 @@ describe("Dashboard - Chart Empty/Loading States", () => {
 
 describe("Dashboard - i18n", () => {
   it("renders tab labels from i18n", () => {
-    render(<Dashboard />);
+    renderDashboard();
     expect(screen.getByRole("tab", { name: "自選清單" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "歷史股價" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "相關新聞" })).toBeInTheDocument();
   });
 
   it("renders search button from i18n", () => {
-    render(<Dashboard />);
+    renderDashboard();
     expect(screen.getByRole("button", { name: "查詢" })).toBeInTheDocument();
   });
 
   it("renders search placeholder from i18n", () => {
-    render(<Dashboard />);
+    renderDashboard();
     expect(
       screen.getByPlaceholderText("輸入股票代號 (如 2330)")
     ).toBeInTheDocument();
