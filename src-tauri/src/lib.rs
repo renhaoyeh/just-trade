@@ -38,6 +38,8 @@ pub fn run() {
             commands::sector::get_sector_stocks,
             commands::llm::llm_chat,
             commands::llm::llm_models,
+            commands::llm::llm_agents,
+            commands::llm::llm_agent_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

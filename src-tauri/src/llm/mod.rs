@@ -1,3 +1,4 @@
+pub mod agents;
 pub mod anthropic;
 pub mod catalog;
 pub mod client;
