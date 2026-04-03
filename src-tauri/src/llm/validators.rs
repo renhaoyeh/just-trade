@@ -8,7 +8,7 @@ use super::config::LlmProvider;
 /// - Unknown/empty catalog: valid by default
 /// - Known providers: check against catalog (prefix match)
 pub fn validate_model(provider: &LlmProvider, model: &str) -> bool {
-    if *provider == LlmProvider::Ollama {
+    if *provider == LlmProvider::Ollama || *provider == LlmProvider::Groq {
         return true;
     }
     let models = known_models(provider);

@@ -24,6 +24,7 @@ pub fn llm_models(provider: String) -> Result<Vec<String>, String> {
         "openai" => LlmProvider::OpenAI,
         "anthropic" => LlmProvider::Anthropic,
         "google" => LlmProvider::Google,
+        "groq" => LlmProvider::Groq,
         "ollama" => LlmProvider::Ollama,
         other => return Err(format!("Unknown provider: {other}")),
     };

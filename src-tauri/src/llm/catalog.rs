@@ -42,6 +42,17 @@ pub fn model_options(provider: &LlmProvider, mode: &str) -> Vec<ModelOption> {
             ("Gemini 2.5 Flash — balanced", "gemini-2.5-flash"),
             ("Gemini 1.5 Pro — reliable", "gemini-1.5-pro"),
         ],
+        // Groq
+        (LlmProvider::Groq, "quick") => vec![
+            ("Llama 4 Scout — fast", "meta-llama/llama-4-scout-17b-16e-instruct"),
+            ("Llama 3.3 70B — balanced", "llama-3.3-70b-versatile"),
+            ("Gemma 2 9B — lightweight", "gemma2-9b-it"),
+        ],
+        (LlmProvider::Groq, "deep") => vec![
+            ("Llama 4 Maverick — most capable", "meta-llama/llama-4-maverick-17b-128e-instruct"),
+            ("Llama 3.3 70B — balanced", "llama-3.3-70b-versatile"),
+            ("DeepSeek R1 — reasoning", "deepseek-r1-distill-llama-70b"),
+        ],
         // Ollama — user provides any model string
         (LlmProvider::Ollama, _) => vec![
             ("Qwen3 — general purpose", "qwen3"),

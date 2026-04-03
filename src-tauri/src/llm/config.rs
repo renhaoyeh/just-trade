@@ -7,6 +7,7 @@ pub enum LlmProvider {
     OpenAI,
     Anthropic,
     Google,
+    Groq,
     Ollama,
 }
 
@@ -16,6 +17,7 @@ impl std::fmt::Display for LlmProvider {
             Self::OpenAI => write!(f, "openai"),
             Self::Anthropic => write!(f, "anthropic"),
             Self::Google => write!(f, "google"),
+            Self::Groq => write!(f, "groq"),
             Self::Ollama => write!(f, "ollama"),
         }
     }

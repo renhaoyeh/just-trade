@@ -10,6 +10,7 @@ pub struct AppSettings {
     pub openai_api_key: Option<String>,
     pub anthropic_api_key: Option<String>,
     pub google_api_key: Option<String>,
+    pub groq_api_key: Option<String>,
     pub ollama_base_url: Option<String>,
 }
 

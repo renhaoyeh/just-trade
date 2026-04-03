@@ -30,6 +30,7 @@ const PROVIDERS = [
   { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic" },
   { value: "google", label: "Google Gemini" },
+  { value: "groq", label: "Groq" },
   { value: "ollama", label: "Ollama (Local)" },
 ];
 
@@ -41,6 +42,7 @@ export default function Settings() {
     openai_api_key: null,
     anthropic_api_key: null,
     google_api_key: null,
+    groq_api_key: null,
     ollama_base_url: null,
   });
   const [models, setModels] = useState<string[]>([]);
@@ -179,6 +181,17 @@ export default function Settings() {
                   value={settings.google_api_key || ""}
                   onChange={(e) => update("google_api_key", e.target.value || null)}
                   placeholder="AIza..."
+                />
+              </div>
+            )}
+            {provider === "groq" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Groq API Key</label>
+                <Input
+                  type="password"
+                  value={settings.groq_api_key || ""}
+                  onChange={(e) => update("groq_api_key", e.target.value || null)}
+                  placeholder="gsk_..."
                 />
               </div>
             )}

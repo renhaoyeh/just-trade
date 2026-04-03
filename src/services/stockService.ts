@@ -49,6 +49,7 @@ export interface AppSettings {
   openai_api_key: string | null;
   anthropic_api_key: string | null;
   google_api_key: string | null;
+  groq_api_key: string | null;
   ollama_base_url: string | null;
 }
 
