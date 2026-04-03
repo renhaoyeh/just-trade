@@ -164,4 +164,31 @@ describe("Backtest Page", () => {
       expect(screen.getByText("2023-05-10")).toBeInTheDocument();
     });
   });
+
+  it("renders compare all button", () => {
+    renderBacktest();
+    expect(screen.getByRole("button", { name: "全部比較" })).toBeInTheDocument();
+  });
+
+  it("runs all strategies and shows comparison table", async () => {
+    // Mock 4 calls (one per strategy)
+    mockedInvoke.mockResolvedValue(mockBacktestResult);
+    renderBacktest();
+
+    await userEvent.click(screen.getByRole("button", { name: "全部比較" }));
+
+    await waitFor(() => {
+      expect(mockedInvoke).toHaveBeenCalledTimes(4);
+    });
+
+    // Comparison table should appear
+    await waitFor(() => {
+      expect(screen.getByText("策略比較")).toBeInTheDocument();
+      // All strategy names should be in the comparison table
+      expect(screen.getAllByText("均線交叉").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("RSI").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("布林通道").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("MACD").length).toBeGreaterThanOrEqual(1);
+    });
+  });
 });
