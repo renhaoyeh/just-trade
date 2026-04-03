@@ -44,6 +44,8 @@ pub fn run() {
             commands::llm::llm_agents,
             commands::llm::llm_agent_chat,
             commands::analysis::run_analysis,
+            commands::analysis::get_analysis_history,
+            commands::analysis::get_analysis_detail,
             commands::settings::get_settings,
             commands::settings::save_settings,
         ])

@@ -1,3 +1,4 @@
+pub mod analysis;
 pub mod sectors;
 pub mod stock_prices;
 

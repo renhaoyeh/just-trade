@@ -114,6 +114,7 @@
     "socialAnalyst": "Social Sentiment",
     "run": "Run Analysis",
     "running": "Analyzing...",
-    "progress": "Progress"
+    "progress": "Progress",
+    "history": "History"
   }
 }

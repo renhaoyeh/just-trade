@@ -114,6 +114,7 @@
     "socialAnalyst": "社群輿情分析",
     "run": "開始分析",
     "running": "分析中...",
-    "progress": "執行進度"
+    "progress": "執行進度",
+    "history": "歷史紀錄"
   }
 }

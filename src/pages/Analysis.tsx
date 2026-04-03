@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -15,11 +14,21 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   runAnalysis,
   getSettings,
+  getAnalysisHistory,
+  getAnalysisDetail,
   type PipelineConfig,
   type LlmConfig,
+  type AnalysisRecord,
 } from "@/services/stockService";
 
 interface ProgressEvent {
@@ -33,7 +42,8 @@ interface StepStatus {
   agent: string;
   phase: string;
   status: "pending" | "running" | "done" | "error";
-  message?: string;
+  statusMessage?: string;
+  content?: string;
 }
 
 const ALL_STEPS: { agent: string; phase: string }[] = [
@@ -51,6 +61,10 @@ const ALL_STEPS: { agent: string; phase: string }[] = [
   { agent: "Portfolio Manager", phase: "final" },
 ];
 
+function stepKey(s: { phase: string; agent: string }) {
+  return `${s.phase}-${s.agent}`;
+}
+
 export default function Analysis() {
   const { t } = useTranslation();
   const [symbol, setSymbol] = useState("2330.TW");
@@ -58,15 +72,23 @@ export default function Analysis() {
   const [steps, setSteps] = useState<StepStatus[]>([]);
   const [signal, setSignal] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [history, setHistory] = useState<AnalysisRecord[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   // Config
   const [debateRounds, setDebateRounds] = useState(1);
   const [riskRounds, setRiskRounds] = useState(1);
+  const [cooldownSecs, setCooldownSecs] = useState(15);
   const [enableMarket, setEnableMarket] = useState(true);
   const [enableNews, setEnableNews] = useState(true);
   const [enableFundamentals, setEnableFundamentals] = useState(true);
   const [enableSocial, setEnableSocial] = useState(false);
-  const [cooldownSecs, setCooldownSecs] = useState(15);
+
+  // Load history on mount
+  useEffect(() => {
+    getAnalysisHistory(20).then(setHistory).catch(console.error);
+  }, []);
 
   // Listen to progress events
   useEffect(() => {
@@ -75,20 +97,41 @@ export default function Analysis() {
 
       if (phase === "complete") {
         setSignal(message || "HOLD");
+        getAnalysisHistory(20).then(setHistory).catch(console.error);
         return;
       }
 
+      if (phase === "cooldown") return;
+
       setSteps((prev) => {
-        const existing = prev.find((s) => s.agent === agent && s.phase === phase);
-        if (existing) {
-          return prev.map((s) =>
-            s.agent === agent && s.phase === phase
-              ? { ...s, status: status as StepStatus["status"], message: message || undefined }
-              : s
-          );
+        const key = `${phase}-${agent}`;
+        const existing = prev.find((s) => stepKey(s) === key);
+
+        const updated: StepStatus = existing
+          ? { ...existing }
+          : { agent, phase, status: "pending" };
+
+        if (status === "running") {
+          updated.status = "running";
+          updated.statusMessage = message || undefined;
+        } else if (status === "done") {
+          updated.status = "done";
+          updated.content = message || undefined;
+          // Auto-expand
+          setExpandedCards((prev) => new Set(prev).add(key));
+        } else if (status === "error") {
+          updated.status = "error";
+          updated.statusMessage = message || undefined;
         }
-        return [...prev, { agent, phase, status: status as StepStatus["status"], message: message || undefined }];
+
+        if (existing) {
+          return prev.map((s) => (stepKey(s) === key ? updated : s));
+        }
+        return [...prev, updated];
       });
+
+      // Auto-scroll
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     });
 
     return () => { unlisten.then((fn) => fn()); };
@@ -99,41 +142,26 @@ export default function Analysis() {
     setSteps([]);
     setSignal(null);
     setError(null);
+    setExpandedCards(new Set());
 
-    // Build LLM config from saved settings
     let quickLlm: LlmConfig = { provider: "openai", model: "gpt-4o-mini" };
     let deepLlm: LlmConfig = { provider: "openai", model: "gpt-4o" };
 
     try {
       const settings = await getSettings();
-      // Use first provider that has a key + model
       for (const [provider, cfg] of Object.entries(settings)) {
         if (cfg && cfg.api_key && cfg.model) {
-          const base: LlmConfig = {
-            provider,
-            model: cfg.model,
-            api_key: cfg.api_key,
-            base_url: cfg.base_url,
-          };
-          quickLlm = base;
-          deepLlm = { ...base };
+          quickLlm = { provider, model: cfg.model, api_key: cfg.api_key, base_url: cfg.base_url };
+          deepLlm = { ...quickLlm };
           break;
         }
-        // Ollama: no key needed
         if (provider === "ollama" && cfg && cfg.base_url && cfg.model) {
-          const base: LlmConfig = {
-            provider: "ollama",
-            model: cfg.model,
-            base_url: cfg.base_url,
-          };
-          quickLlm = base;
-          deepLlm = { ...base };
+          quickLlm = { provider: "ollama", model: cfg.model, base_url: cfg.base_url };
+          deepLlm = { ...quickLlm };
           break;
         }
       }
-    } catch {
-      // Use defaults
-    }
+    } catch { /* use defaults */ }
 
     const config: PipelineConfig = {
       quick_llm: quickLlm,
@@ -156,20 +184,62 @@ export default function Analysis() {
     }
   }, [symbol, debateRounds, riskRounds, enableMarket, enableNews, enableFundamentals, enableSocial, cooldownSecs]);
 
-  const statusIcon = (status: StepStatus["status"]) => {
-    switch (status) {
-      case "running": return "⏳";
-      case "done": return "✅";
-      case "error": return "❌";
-      default: return "⬜";
+  const loadHistory = async (record: AnalysisRecord) => {
+    try {
+      const detail = await getAnalysisDetail(record.id) as Record<string, string>;
+      setSignal(record.signal);
+      setSteps([]);
+      setExpandedCards(new Set());
+
+      // Map AnalysisResult fields back to steps
+      const fieldMap: [string, string, string][] = [
+        ["market_report", "Market Analyst", "analysts"],
+        ["news_report", "News Analyst", "analysts"],
+        ["fundamentals_report", "Fundamentals Analyst", "analysts"],
+        ["social_report", "Social Media Analyst", "analysts"],
+        ["bull_arguments", "Bull Researcher", "debate"],
+        ["bear_arguments", "Bear Researcher", "debate"],
+        ["investment_decision", "Research Manager", "decision"],
+        ["trader_plan", "Trader", "decision"],
+        ["risk_aggressive", "Aggressive Analyst", "risk"],
+        ["risk_conservative", "Conservative Analyst", "risk"],
+        ["risk_neutral", "Neutral Analyst", "risk"],
+        ["final_decision", "Portfolio Manager", "final"],
+      ];
+
+      const loaded: StepStatus[] = [];
+      const expanded = new Set<string>();
+      for (const [field, agent, phase] of fieldMap) {
+        const content = detail[field];
+        if (content) {
+          loaded.push({ agent, phase, status: "done", content });
+          expanded.add(`${phase}-${agent}`);
+        }
+      }
+      setSteps(loaded);
+      setExpandedCards(expanded);
+    } catch (e) {
+      setError(String(e));
     }
   };
 
-  const signalColor = (s: string) => {
-    if (s === "BUY" || s === "OVERWEIGHT") return "text-emerald-500";
-    if (s === "SELL" || s === "UNDERWEIGHT") return "text-red-500";
-    return "text-yellow-500";
+  const toggleCard = (key: string) => {
+    setExpandedCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
   };
+
+  const signalColor = (s: string) => {
+    if (s === "BUY" || s === "OVERWEIGHT") return "bg-emerald-500";
+    if (s === "SELL" || s === "UNDERWEIGHT") return "bg-red-500";
+    return "bg-yellow-500";
+  };
+
+  const displaySteps = steps.length > 0
+    ? steps
+    : ALL_STEPS.map((s) => ({ ...s, status: "pending" as const }));
 
   return (
     <>
@@ -182,84 +252,88 @@ export default function Analysis() {
         </div>
       </header>
 
-      <div className="flex-1 space-y-4 p-6">
-        <div className="flex gap-4">
-          {/* Left: Config + Run */}
-          <div className="w-80 space-y-4">
+      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
+        {/* Left: Config */}
+        <div className="w-72 shrink-0 space-y-4 overflow-y-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("analysis.config")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t("analysis.symbol")}</label>
+                <Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="2330.TW" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t("analysis.debateRounds")}</label>
+                <Input type="number" min={1} max={5} value={debateRounds} onChange={(e) => setDebateRounds(Number(e.target.value) || 1)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t("analysis.riskRounds")}</label>
+                <Input type="number" min={1} max={5} value={riskRounds} onChange={(e) => setRiskRounds(Number(e.target.value) || 1)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">{t("analysis.cooldown")}</label>
+                <Input type="number" min={0} max={60} value={cooldownSecs} onChange={(e) => setCooldownSecs(Number(e.target.value) || 0)} />
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t("analysis.analysts")}</label>
+                {[
+                  { label: t("analysis.marketAnalyst"), checked: enableMarket, set: setEnableMarket },
+                  { label: t("analysis.newsAnalyst"), checked: enableNews, set: setEnableNews },
+                  { label: t("analysis.fundamentalsAnalyst"), checked: enableFundamentals, set: setEnableFundamentals },
+                  { label: t("analysis.socialAnalyst"), checked: enableSocial, set: setEnableSocial },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between">
+                    <span className="text-sm">{item.label}</span>
+                    <Switch checked={item.checked} onCheckedChange={item.set} />
+                  </div>
+                ))}
+              </div>
+              <Button className="w-full" onClick={handleRun} disabled={running}>
+                {running ? t("analysis.running") : t("analysis.run")}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* History */}
+          {history.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">{t("analysis.config")}</CardTitle>
+                <CardTitle className="text-base">{t("analysis.history")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{t("analysis.symbol")}</label>
-                  <Input
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                    placeholder="2330.TW"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{t("analysis.debateRounds")}</label>
-                  <Input
-                    type="number" min={1} max={5}
-                    value={debateRounds}
-                    onChange={(e) => setDebateRounds(Number(e.target.value) || 1)}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{t("analysis.riskRounds")}</label>
-                  <Input
-                    type="number" min={1} max={5}
-                    value={riskRounds}
-                    onChange={(e) => setRiskRounds(Number(e.target.value) || 1)}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">{t("analysis.cooldown")}</label>
-                  <Input
-                    type="number" min={0} max={60}
-                    value={cooldownSecs}
-                    onChange={(e) => setCooldownSecs(Number(e.target.value) || 0)}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("analysis.analysts")}</label>
-                  {[
-                    { label: t("analysis.marketAnalyst"), checked: enableMarket, set: setEnableMarket },
-                    { label: t("analysis.newsAnalyst"), checked: enableNews, set: setEnableNews },
-                    { label: t("analysis.fundamentalsAnalyst"), checked: enableFundamentals, set: setEnableFundamentals },
-                    { label: t("analysis.socialAnalyst"), checked: enableSocial, set: setEnableSocial },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between">
-                      <span className="text-sm">{item.label}</span>
-                      <Switch checked={item.checked} onCheckedChange={item.set} />
-                    </div>
-                  ))}
-                </div>
-
-                <Button className="w-full" onClick={handleRun} disabled={running}>
-                  {running ? t("analysis.running") : t("analysis.run")}
-                </Button>
+              <CardContent className="space-y-2">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    className="flex w-full items-center gap-2 rounded-md border p-2 text-left text-sm hover:bg-muted/50"
+                    onClick={() => loadHistory(h)}
+                  >
+                    <Badge className={signalColor(h.signal)} variant="default">
+                      {h.signal}
+                    </Badge>
+                    <span className="flex-1 font-medium">{h.symbol}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {h.created_at.split(" ")[0]}
+                    </span>
+                  </button>
+                ))}
               </CardContent>
             </Card>
-          </div>
+          )}
+        </div>
 
-          {/* Right: Progress */}
-          <div className="flex-1 space-y-4">
+        {/* Right: Card stack */}
+        <ScrollArea className="flex-1">
+          <div className="space-y-3 pr-3">
             {/* Signal */}
             {signal && (
               <Card>
                 <CardContent className="flex items-center justify-center py-6">
-                  <span className={`text-4xl font-bold ${signalColor(signal)}`}>
+                  <Badge className={`text-2xl px-6 py-2 ${signalColor(signal)}`} variant="default">
                     {signal}
-                  </span>
+                  </Badge>
                 </CardContent>
               </Card>
             )}
@@ -270,31 +344,64 @@ export default function Analysis() {
               </Card>
             )}
 
-            {/* Progress Steps */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("analysis.progress")}</CardTitle>
-                <CardDescription>
-                  {steps.filter((s) => s.status === "done").length} / {steps.length || ALL_STEPS.length}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {(steps.length > 0 ? steps : ALL_STEPS.map((s) => ({ ...s, status: "pending" as const }))).map((step, i) => (
-                    <div key={`${step.phase}-${step.agent}-${i}`} className="flex items-center gap-2 py-1">
-                      <span className="text-sm">{statusIcon(step.status)}</span>
-                      <span className="text-sm flex-1">{step.agent}</span>
-                      <Badge variant="outline" className="text-xs">{step.phase}</Badge>
-                      {step.message && (
-                        <span className="text-xs text-muted-foreground">{step.message}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Agent cards */}
+            {displaySteps.map((step, i) => {
+              const key = stepKey(step);
+              const isOpen = expandedCards.has(key);
+
+              return (
+                <Card
+                  key={`${key}-${i}`}
+                  className={
+                    step.status === "running" ? "ring-2 ring-primary/50" :
+                    step.status === "error" ? "ring-2 ring-destructive/50" : ""
+                  }
+                >
+                  <Collapsible open={isOpen} onOpenChange={() => toggleCard(key)}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className="cursor-pointer py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {step.status === "running" ? "⏳" :
+                             step.status === "done" ? "✅" :
+                             step.status === "error" ? "❌" : "⬜"}
+                          </span>
+                          <span className="text-sm font-medium flex-1">{step.agent}</span>
+                          <Badge variant="outline" className="text-xs">{step.phase}</Badge>
+                          {step.statusMessage && step.status === "running" && (
+                            <span className="text-xs text-muted-foreground">{step.statusMessage}</span>
+                          )}
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        {step.status === "running" && (
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-5/6" />
+                          </div>
+                        )}
+                        {step.content && (
+                          <div className="max-h-80 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-muted-foreground">
+                              {step.content}
+                            </pre>
+                          </div>
+                        )}
+                        {step.status === "error" && step.statusMessage && (
+                          <p className="text-xs text-destructive">{step.statusMessage}</p>
+                        )}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              );
+            })}
+            <div ref={bottomRef} />
           </div>
-        </div>
+        </ScrollArea>
       </div>
     </>
   );

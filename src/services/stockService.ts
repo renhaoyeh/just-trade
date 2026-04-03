@@ -102,6 +102,22 @@ export async function runAnalysis(
   return invoke("run_analysis", { symbol, pipelineConfig });
 }
 
+export interface AnalysisRecord {
+  id: number;
+  symbol: string;
+  signal: string;
+  created_at: string;
+  report_path: string;
+}
+
+export async function getAnalysisHistory(limit?: number): Promise<AnalysisRecord[]> {
+  return invoke("get_analysis_history", { limit: limit ?? 20 });
+}
+
+export async function getAnalysisDetail(id: number): Promise<unknown> {
+  return invoke("get_analysis_detail", { id });
+}
+
 export async function getLlmModels(provider: string): Promise<string[]> {
   return invoke("llm_models", { provider });
 }

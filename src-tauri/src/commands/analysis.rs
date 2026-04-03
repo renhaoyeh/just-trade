@@ -1,7 +1,9 @@
 use std::collections::HashMap;
-use tauri::{AppHandle, Emitter};
+use sqlx::SqlitePool;
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::agents;
+use crate::db;
 use crate::llm::base_client::LlmError;
 use crate::llm::config::{ChatMessage, LlmConfig, Role};
 use crate::llm::factory::create_client;
@@ -53,7 +55,7 @@ pub struct AnalysisProgress {
 }
 
 /// Final analysis result
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AnalysisResult {
     pub market_report: String,
     pub news_report: String,
@@ -176,6 +178,7 @@ pub async fn run_analysis(
         emit_progress(&app, "analysts", name, "running", None);
         match call_agent(&app, quick, agent_id, &prompt, &HashMap::new(), pipeline_config.cooldown_secs).await {
             Ok(report) => {
+                emit_progress(&app, "analysts", name, "done", Some(&report));
                 match *field {
                     "market" => result.market_report = report,
                     "news" => result.news_report = report,
@@ -183,7 +186,6 @@ pub async fn run_analysis(
                     "social" => result.social_report = report,
                     _ => {}
                 }
-                emit_progress(&app, "analysts", name, "done", None);
             }
             Err(e) => {
                 emit_progress(&app, "analysts", name, "error", Some(&e.to_string()));
@@ -214,7 +216,7 @@ pub async fn run_analysis(
                 debate_history.push_str(&format!("\n\n**Bull (Round {}):**\n{resp}", round + 1));
                 current_response = resp.clone();
                 result.bull_arguments = resp;
-                emit_progress(&app, "debate", "Bull Researcher", "done", None);
+                emit_progress(&app, "debate", "Bull Researcher", "done", Some(&result.bull_arguments));
             }
             Err(e) => {
                 emit_progress(&app, "debate", "Bull Researcher", "error", Some(&e.to_string()));
@@ -233,7 +235,7 @@ pub async fn run_analysis(
                 debate_history.push_str(&format!("\n\n**Bear (Round {}):**\n{resp}", round + 1));
                 current_response = resp.clone();
                 result.bear_arguments = resp;
-                emit_progress(&app, "debate", "Bear Researcher", "done", None);
+                emit_progress(&app, "debate", "Bear Researcher", "done", Some(&result.bear_arguments));
             }
             Err(e) => {
                 emit_progress(&app, "debate", "Bear Researcher", "error", Some(&e.to_string()));
@@ -253,7 +255,7 @@ pub async fn run_analysis(
         match call_agent(&app, deep, "research_manager", &prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 result.investment_decision = resp;
-                emit_progress(&app, "decision", "Research Manager", "done", None);
+                emit_progress(&app, "decision", "Research Manager", "done", Some(&result.investment_decision));
             }
             Err(e) => {
                 emit_progress(&app, "decision", "Research Manager", "error", Some(&e.to_string()));
@@ -275,7 +277,7 @@ pub async fn run_analysis(
         match call_agent(&app, deep, "trader", &trader_prompt, &vars, pipeline_config.cooldown_secs).await {
             Ok(resp) => {
                 result.trader_plan = resp;
-                emit_progress(&app, "decision", "Trader", "done", None);
+                emit_progress(&app, "decision", "Trader", "done", Some(&result.trader_plan));
             }
             Err(e) => {
                 emit_progress(&app, "decision", "Trader", "error", Some(&e.to_string()));
@@ -310,7 +312,7 @@ pub async fn run_analysis(
                 risk_history.push_str(&format!("\n\n**Aggressive (Round {}):**\n{resp}", round + 1));
                 agg_resp = resp.clone();
                 result.risk_aggressive = resp;
-                emit_progress(&app, "risk", "Aggressive Analyst", "done", None);
+                emit_progress(&app, "risk", "Aggressive Analyst", "done", Some(&result.risk_aggressive));
             }
             Err(e) => {
                 emit_progress(&app, "risk", "Aggressive Analyst", "error", Some(&e.to_string()));
@@ -329,7 +331,7 @@ pub async fn run_analysis(
                 risk_history.push_str(&format!("\n\n**Conservative (Round {}):**\n{resp}", round + 1));
                 con_resp = resp.clone();
                 result.risk_conservative = resp;
-                emit_progress(&app, "risk", "Conservative Analyst", "done", None);
+                emit_progress(&app, "risk", "Conservative Analyst", "done", Some(&result.risk_conservative));
             }
             Err(e) => {
                 emit_progress(&app, "risk", "Conservative Analyst", "error", Some(&e.to_string()));
@@ -348,7 +350,7 @@ pub async fn run_analysis(
                 risk_history.push_str(&format!("\n\n**Neutral (Round {}):**\n{resp}", round + 1));
                 neu_resp = resp.clone();
                 result.risk_neutral = resp;
-                emit_progress(&app, "risk", "Neutral Analyst", "done", None);
+                emit_progress(&app, "risk", "Neutral Analyst", "done", Some(&result.risk_neutral));
             }
             Err(e) => {
                 emit_progress(&app, "risk", "Neutral Analyst", "error", Some(&e.to_string()));
@@ -372,7 +374,7 @@ pub async fn run_analysis(
                 let signal = extract_signal(&resp);
                 result.final_decision = resp;
                 result.signal = signal;
-                emit_progress(&app, "final", "Portfolio Manager", "done", None);
+                emit_progress(&app, "final", "Portfolio Manager", "done", Some(&result.final_decision));
             }
             Err(e) => {
                 emit_progress(&app, "final", "Portfolio Manager", "error", Some(&e.to_string()));
@@ -381,8 +383,59 @@ pub async fn run_analysis(
         }
     }
 
+    // ── Save to DB + JSON ──
+    let pool = app.state::<SqlitePool>();
+    let data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+    let reports_dir = data_dir.join("reports");
+    std::fs::create_dir_all(&reports_dir).ok();
+
+    let filename = format!(
+        "{}_{}.json",
+        symbol.replace('.', "_"),
+        chrono::Utc::now().format("%Y%m%d_%H%M%S")
+    );
+    let report_path = reports_dir.join(&filename);
+
+    if let Ok(json) = serde_json::to_string_pretty(&result) {
+        std::fs::write(&report_path, &json).ok();
+    }
+
+    let _ = db::analysis::save_analysis(
+        pool.inner(),
+        &symbol,
+        &result.signal,
+        &report_path.to_string_lossy(),
+    )
+    .await;
+
     emit_progress(&app, "complete", "", "done", Some(&result.signal));
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn get_analysis_history(
+    pool: tauri::State<'_, SqlitePool>,
+    limit: Option<i64>,
+) -> Result<Vec<db::analysis::AnalysisRecord>, String> {
+    db::analysis::get_analysis_history(pool.inner(), limit.unwrap_or(20))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_analysis_detail(
+    pool: tauri::State<'_, SqlitePool>,
+    id: i64,
+) -> Result<AnalysisResult, String> {
+    let record = db::analysis::get_analysis_by_id(pool.inner(), id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or("Analysis not found")?;
+
+    let content = std::fs::read_to_string(&record.report_path)
+        .map_err(|e| format!("Failed to read report: {e}"))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse report: {e}"))
 }
 
 /// Extract BUY/HOLD/SELL signal from portfolio manager's response
