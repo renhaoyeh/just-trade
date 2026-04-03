@@ -287,6 +287,7 @@ export default function Backtest() {
                       <TableHead className="text-right">{t("backtest.totalReturn")}</TableHead>
                       <TableHead className="text-right">{t("backtest.maxDrawdown")}</TableHead>
                       <TableHead className="text-right">{t("backtest.winRate")}</TableHead>
+                      <TableHead className="text-right">{t("backtest.totalInvested")}</TableHead>
                       <TableHead className="text-right">{t("backtest.totalTrades")}</TableHead>
                       <TableHead className="text-right">{t("backtest.finalEquity")}</TableHead>
                       <TableHead className="text-right">{t("backtest.totalCommission")}</TableHead>
@@ -320,6 +321,9 @@ export default function Backtest() {
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {r.metrics.win_rate_pct.toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          ${formatNumber(r.metrics.total_invested)}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {r.metrics.total_trades}
@@ -445,6 +449,7 @@ export default function Backtest() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-y-2 gap-x-8 text-sm">
                   <DetailRow label={t("backtest.initialCapital")} value={`$${formatNumber(result.metrics.initial_capital)}`} />
+                  <DetailRow label={t("backtest.totalInvested")} value={`$${formatNumber(result.metrics.total_invested)}`} />
                   <DetailRow label={t("backtest.finalEquity")} value={`$${formatNumber(result.metrics.final_equity)}`} />
                   <DetailRow label={t("backtest.totalTrades")} value={String(result.metrics.total_trades)} />
                   <DetailRow label={t("backtest.tradingDays")} value={String(result.metrics.trading_days)} />

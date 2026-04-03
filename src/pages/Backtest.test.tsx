@@ -19,6 +19,7 @@ const mockBacktestResult = {
   symbol: "2330.TW",
   metrics: {
     initial_capital: 1000000,
+    total_invested: 1000000,
     final_equity: 1050000,
     total_return_pct: 5.0,
     max_drawdown_pct: 3.2,

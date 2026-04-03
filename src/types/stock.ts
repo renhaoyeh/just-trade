@@ -127,6 +127,7 @@ export interface EquityPoint {
 
 export interface BacktestMetrics {
   initial_capital: number;
+  total_invested: number;
   final_equity: number;
   total_return_pct: number;
   max_drawdown_pct: number;

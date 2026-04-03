@@ -207,6 +207,7 @@
     "totalReturn": "Total Return",
     "maxDrawdown": "Max Drawdown",
     "winRate": "Win Rate",
+    "totalInvested": "Total Invested",
     "finalEquity": "Final Equity",
     "details": "Details",
     "totalTrades": "Total Trades",

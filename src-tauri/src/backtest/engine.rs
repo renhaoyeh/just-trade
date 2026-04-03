@@ -63,6 +63,8 @@ pub struct EquityPoint {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BacktestMetrics {
     pub initial_capital: f64,
+    /// Total amount actually spent on buying shares (excluding commission).
+    pub total_invested: f64,
     pub final_equity: f64,
     pub total_return_pct: f64,
     pub max_drawdown_pct: f64,
@@ -103,6 +105,7 @@ pub fn run_backtest(
     let mut equity_curve: Vec<EquityPoint> = Vec::new();
     let mut total_commission = 0.0;
     let mut total_tax = 0.0;
+    let mut total_invested = 0.0;
 
     for (i, (price, signal)) in prices.iter().zip(signals.iter()).enumerate() {
         match signal {
@@ -113,6 +116,7 @@ pub fn run_backtest(
                     let amount = price.close * buy_shares as f64;
                     let commission = (amount * config.commission_rate).max(20.0);
                     total_commission += commission;
+                    total_invested += amount;
                     cash -= amount + commission;
                     avg_cost = price.close;
                     shares = buy_shares;
@@ -136,6 +140,7 @@ pub fn run_backtest(
                     let amount = price.close * buy_shares as f64;
                     let commission = (amount * config.commission_rate).max(20.0);
                     total_commission += commission;
+                    total_invested += amount;
                     cash -= amount + commission;
                     // Weighted average cost
                     let total_cost = avg_cost * shares as f64 + price.close * buy_shares as f64;
@@ -220,7 +225,14 @@ pub fn run_backtest(
 
     // Compute metrics
     let final_equity = equity_curve.last().map(|e| e.equity).unwrap_or(config.initial_capital);
-    let total_return_pct = (final_equity / config.initial_capital - 1.0) * 100.0;
+    // Return based on total_invested so DCA isn't diluted by idle cash
+    let profit = final_equity - config.initial_capital;
+    let return_base = if total_invested > 0.0 { total_invested } else { config.initial_capital };
+    let total_return_pct = if return_base > 0.0 {
+        profit / return_base * 100.0
+    } else {
+        0.0
+    };
     let max_drawdown_pct = compute_max_drawdown(&equity_curve);
 
     let sell_trades: Vec<&Trade> = trades.iter().filter(|t| t.action == "sell").collect();
@@ -235,6 +247,7 @@ pub fn run_backtest(
 
     let metrics = BacktestMetrics {
         initial_capital: config.initial_capital,
+        total_invested,
         final_equity,
         total_return_pct,
         max_drawdown_pct,

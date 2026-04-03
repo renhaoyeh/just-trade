@@ -207,6 +207,7 @@
     "totalReturn": "總報酬率",
     "maxDrawdown": "最大回撤",
     "winRate": "勝率",
+    "totalInvested": "實際投入",
     "finalEquity": "最終權益",
     "details": "詳細指標",
     "totalTrades": "交易次數",
