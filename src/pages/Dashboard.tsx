@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
@@ -88,11 +89,11 @@ function formatDate(daysAgo: number): string {
 }
 
 const RANGE_OPTIONS = [
-  { label: "1M", days: 30, description: "近 1 個月" },
-  { label: "3M", days: 90, description: "近 3 個月" },
-  { label: "6M", days: 180, description: "近 6 個月" },
-  { label: "1Y", days: 365, description: "近 1 年" },
-  { label: "5Y", days: 1825, description: "近 5 年" },
+  { label: "1M", days: 30 },
+  { label: "3M", days: 90 },
+  { label: "6M", days: 180 },
+  { label: "1Y", days: 365 },
+  { label: "5Y", days: 1825 },
 ] as const;
 
 type RangeLabel = (typeof RANGE_OPTIONS)[number]["label"];
@@ -110,6 +111,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { t } = useTranslation();
   const rangeConfig = RANGE_OPTIONS.find((r) => r.label === selectedRange)!;
 
   const loadStockData = useCallback(async (symbol: string, days: number) => {
@@ -195,18 +197,18 @@ export default function Dashboard() {
           <header className="flex items-center gap-2 border-b px-4 py-3">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
-            <h1 className="text-sm font-semibold">Dashboard</h1>
+            <h1 className="text-sm font-semibold">{t("dashboard.title")}</h1>
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Input
-                  placeholder="輸入股票代號 (如 2330)"
+                  placeholder={t("dashboard.searchPlaceholder")}
                   value={searchSymbol}
                   onChange={(e) => setSearchSymbol(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   className="h-8 w-48"
                 />
                 <Button size="sm" variant="outline" onClick={handleSearch}>
-                  查詢
+                  {t("dashboard.search")}
                 </Button>
               </div>
               <Badge variant="outline">
@@ -231,7 +233,7 @@ export default function Dashboard() {
                 value={
                   latestPrice
                     ? `${stockInfo?.currency === "TWD" ? "NT$" : "$"}${latestPrice.close.toFixed(2)}`
-                    : loading ? "Loading..." : "N/A"
+                    : loading ? t("dashboard.loading") : t("dashboard.na")
                 }
                 description={
                   latestPrice
@@ -241,29 +243,29 @@ export default function Dashboard() {
                 trend={priceChange >= 0 ? "up" : "down"}
               />
               <StatCard
-                title="52 Week High"
+                title={t("dashboard.weekHigh52")}
                 value={
                   stockInfo?.fifty_two_week_high
                     ? `$${stockInfo.fifty_two_week_high.toFixed(2)}`
-                    : "N/A"
+                    : t("dashboard.na")
                 }
                 description={stockInfo?.exchange || ""}
               />
               <StatCard
-                title="52 Week Low"
+                title={t("dashboard.weekLow52")}
                 value={
                   stockInfo?.fifty_two_week_low
                     ? `$${stockInfo.fifty_two_week_low.toFixed(2)}`
-                    : "N/A"
+                    : t("dashboard.na")
                 }
                 description={
                   stockInfo?.pe_ratio
-                    ? `P/E: ${stockInfo.pe_ratio.toFixed(2)}`
+                    ? t("dashboard.peRatio", { value: stockInfo.pe_ratio.toFixed(2) })
                     : ""
                 }
               />
               <StatCard
-                title="Market Cap"
+                title={t("dashboard.marketCap")}
                 value={
                   stockInfo?.market_cap
                     ? stockInfo.market_cap >= 1_000_000_000_000
@@ -271,11 +273,11 @@ export default function Dashboard() {
                       : stockInfo.market_cap >= 1_000_000_000
                         ? `$${(stockInfo.market_cap / 1_000_000_000).toFixed(2)}B`
                         : `$${(stockInfo.market_cap / 1_000_000).toFixed(2)}M`
-                    : "N/A"
+                    : t("dashboard.na")
                 }
                 description={
                   stockInfo?.dividend_yield
-                    ? `殖利率: ${(stockInfo.dividend_yield * 100).toFixed(2)}%`
+                    ? t("dashboard.dividendYield", { value: (stockInfo.dividend_yield * 100).toFixed(2) })
                     : ""
                 }
               />
@@ -287,9 +289,9 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>
-                      {selectedSymbol} 股價走勢
+                      {t("chart.title", { symbol: selectedSymbol })}
                     </CardTitle>
-                    <CardDescription>{rangeConfig.description}日 K 線收盤價</CardDescription>
+                    <CardDescription>{t("chart.description", { range: t(`chart.range.${selectedRange}`) })}</CardDescription>
                   </div>
                   <div className="flex gap-1">
                     {RANGE_OPTIONS.map((opt) => (
@@ -309,11 +311,11 @@ export default function Dashboard() {
               <CardContent>
                 {loading && chartData.length === 0 ? (
                   <div className="flex h-75 items-center justify-center text-muted-foreground">
-                    載入中...
+                    {t("chart.loading")}
                   </div>
                 ) : chartData.length === 0 ? (
                   <div className="flex h-75 items-center justify-center text-muted-foreground">
-                    無股價資料
+                    {t("chart.empty")}
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
@@ -352,9 +354,9 @@ export default function Dashboard() {
             {/* Tabs section */}
             <Tabs defaultValue="watchlist">
               <TabsList>
-                <TabsTrigger value="watchlist">自選清單</TabsTrigger>
-                <TabsTrigger value="history">歷史股價</TabsTrigger>
-                <TabsTrigger value="news">相關新聞</TabsTrigger>
+                <TabsTrigger value="watchlist">{t("tabs.watchlist")}</TabsTrigger>
+                <TabsTrigger value="history">{t("tabs.history")}</TabsTrigger>
+                <TabsTrigger value="news">{t("tabs.news")}</TabsTrigger>
               </TabsList>
 
               {/* Watchlist tab */}
@@ -377,7 +379,7 @@ export default function Dashboard() {
                         </CardTitle>
                         <CardDescription>
                           {stock.loading
-                            ? "Loading..."
+                            ? t("dashboard.loading")
                             : stock.info?.short_name || stock.info?.long_name || ""}
                         </CardDescription>
                       </CardHeader>
@@ -403,23 +405,23 @@ export default function Dashboard() {
               <TabsContent value="history">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{selectedSymbol} 歷史股價</CardTitle>
+                    <CardTitle>{t("history.title", { symbol: selectedSymbol })}</CardTitle>
                     <CardDescription>
                       {priceHistory.length > 0
                         ? `${priceHistory[0].date} ~ ${priceHistory[priceHistory.length - 1].date} (${priceHistory.length} 筆)`
-                        : "No data"}
+                        : t("dashboard.noData")}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>日期</TableHead>
-                          <TableHead className="text-right">開盤</TableHead>
-                          <TableHead className="text-right">最高</TableHead>
-                          <TableHead className="text-right">最低</TableHead>
-                          <TableHead className="text-right">收盤</TableHead>
-                          <TableHead className="text-right">成交量</TableHead>
+                          <TableHead>{t("history.date")}</TableHead>
+                          <TableHead className="text-right">{t("history.open")}</TableHead>
+                          <TableHead className="text-right">{t("history.high")}</TableHead>
+                          <TableHead className="text-right">{t("history.low")}</TableHead>
+                          <TableHead className="text-right">{t("history.close")}</TableHead>
+                          <TableHead className="text-right">{t("history.volume")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -455,12 +457,12 @@ export default function Dashboard() {
               <TabsContent value="news">
                 <Card>
                   <CardHeader>
-                    <CardTitle>{selectedSymbol} 相關新聞</CardTitle>
+                    <CardTitle>{t("news.title", { symbol: selectedSymbol })}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {news.length === 0 ? (
                       <p className="text-muted-foreground">
-                        {loading ? "Loading..." : "暫無新聞"}
+                        {loading ? t("dashboard.loading") : t("news.empty")}
                       </p>
                     ) : (
                       news.map((item, i) => (

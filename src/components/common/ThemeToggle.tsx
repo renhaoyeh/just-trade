@@ -7,9 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/use-theme";
+import { useTranslation } from "react-i18next";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <DropdownMenu>
@@ -22,21 +24,21 @@ export function ThemeToggle() {
           ) : (
             <Monitor className="size-4" />
           )}
-          <span className="sr-only">Toggle theme</span>
+          <span className="sr-only">{t("theme.toggle")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="size-4" />
-          Light
+          {t("theme.light")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="size-4" />
-          Dark
+          {t("theme.dark")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor className="size-4" />
-          System
+          {t("theme.system")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

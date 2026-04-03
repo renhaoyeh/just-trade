@@ -22,33 +22,36 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useTranslation } from "react-i18next";
 
 const mainNav = [
-  { title: "Dashboard", icon: ChartLine, isActive: true },
-  { title: "Portfolio", icon: Wallet },
-  { title: "Trade", icon: Lightning, badge: "New" },
-  { title: "History", icon: ClockCounterClockwise },
-  { title: "Watchlist", icon: Binoculars },
+  { titleKey: "nav.dashboard", icon: ChartLine, isActive: true },
+  { titleKey: "nav.portfolio", icon: Wallet },
+  { titleKey: "nav.trade", icon: Lightning, badgeKey: "nav.new" },
+  { titleKey: "nav.history", icon: ClockCounterClockwise },
+  { titleKey: "nav.watchlist", icon: Binoculars },
 ];
 
 const bottomNav = [
-  { title: "Settings", icon: GearSix },
-  { title: "Sign Out", icon: SignOut },
+  { titleKey: "nav.settings", icon: GearSix },
+  { titleKey: "nav.signOut", icon: SignOut },
 ];
 
 export function AppSidebar() {
+  const { t } = useTranslation();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Just Trade">
+            <SidebarMenuButton size="lg" tooltip={t("app.name")}>
               <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <Lightning className="size-4" weight="bold" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold">Just Trade</span>
-                <span className="text-xs text-muted-foreground">v0.1.0</span>
+                <span className="font-semibold">{t("app.name")}</span>
+                <span className="text-xs text-muted-foreground">{t("app.version")}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -59,20 +62,20 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.navigation")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                     isActive={item.isActive}
                   >
                     <item.icon className="size-4" />
-                    <span>{item.title}</span>
+                    <span>{t(item.titleKey)}</span>
                   </SidebarMenuButton>
-                  {item.badge && (
-                    <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                  {item.badgeKey && (
+                    <SidebarMenuBadge>{t(item.badgeKey)}</SidebarMenuBadge>
                   )}
                 </SidebarMenuItem>
               ))}
@@ -84,22 +87,22 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           {bottomNav.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
+            <SidebarMenuItem key={item.titleKey}>
+              <SidebarMenuButton tooltip={t(item.titleKey)}>
                 <item.icon className="size-4" />
-                <span>{item.title}</span>
+                <span>{t(item.titleKey)}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
           <SidebarSeparator />
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="User">
+            <SidebarMenuButton size="lg" tooltip={t("nav.user")}>
               <Avatar size="sm">
                 <AvatarFallback>JT</AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Trader</span>
-                <span className="text-xs text-muted-foreground">trader@just.trade</span>
+                <span className="font-medium">{t("nav.traderName")}</span>
+                <span className="text-xs text-muted-foreground">{t("nav.traderEmail")}</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
