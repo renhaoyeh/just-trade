@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import App from "./App";
+import App from "@/App";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((_cmd: string, args: { name: string }) =>
