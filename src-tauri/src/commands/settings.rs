@@ -2,16 +2,22 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
+/// Per-provider settings
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProviderSettings {
+    pub api_key: Option<String>,
+    pub model: Option<String>,
+    pub base_url: Option<String>,
+}
+
 /// App settings persisted as JSON in the app data directory
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppSettings {
-    pub llm_provider: Option<String>,
-    pub llm_model: Option<String>,
-    pub openai_api_key: Option<String>,
-    pub anthropic_api_key: Option<String>,
-    pub google_api_key: Option<String>,
-    pub groq_api_key: Option<String>,
-    pub ollama_base_url: Option<String>,
+    pub openai: Option<ProviderSettings>,
+    pub anthropic: Option<ProviderSettings>,
+    pub google: Option<ProviderSettings>,
+    pub groq: Option<ProviderSettings>,
+    pub ollama: Option<ProviderSettings>,
 }
 
 fn settings_path(app: &AppHandle) -> PathBuf {

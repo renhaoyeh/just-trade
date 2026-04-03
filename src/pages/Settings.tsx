@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
@@ -23,54 +23,174 @@ import {
   getSettings,
   saveSettings,
   testLlmConnection,
-  type AppSettings,
   type LlmConfig,
 } from "@/services/stockService";
 
+interface ProviderSettings {
+  api_key: string | null;
+  model: string | null;
+  base_url: string | null;
+}
+
+interface AppSettings {
+  openai: ProviderSettings | null;
+  anthropic: ProviderSettings | null;
+  google: ProviderSettings | null;
+  groq: ProviderSettings | null;
+  ollama: ProviderSettings | null;
+}
+
 const PROVIDERS = [
-  { value: "openai", label: "OpenAI" },
-  { value: "anthropic", label: "Anthropic" },
-  { value: "google", label: "Google Gemini" },
-  { value: "groq", label: "Groq" },
-  { value: "ollama", label: "Ollama (Local)" },
-];
+  { id: "openai", label: "OpenAI", placeholder: "sk-...", needsKey: true },
+  { id: "anthropic", label: "Anthropic", placeholder: "sk-ant-...", needsKey: true },
+  { id: "google", label: "Google Gemini", placeholder: "AIza...", needsKey: true },
+  { id: "groq", label: "Groq", placeholder: "gsk_...", needsKey: true },
+  { id: "ollama", label: "Ollama (Local)", placeholder: "http://localhost:11434", needsKey: false },
+] as const;
+
+type ProviderId = (typeof PROVIDERS)[number]["id"];
+
+const empty = (): ProviderSettings => ({ api_key: null, model: null, base_url: null });
+
+function ProviderCard({
+  provider,
+  settings,
+  onChange,
+}: {
+  provider: (typeof PROVIDERS)[number];
+  settings: ProviderSettings;
+  onChange: (s: ProviderSettings) => void;
+}) {
+  const { t } = useTranslation();
+  const [models, setModels] = useState<string[]>([]);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const handleTest = useCallback(async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const config: LlmConfig = {
+        provider: provider.id,
+        model: settings.model || "",
+        api_key: settings.api_key,
+        base_url: provider.id === "ollama" ? (settings.base_url || "http://localhost:11434") : null,
+      };
+      const result = await testLlmConnection(config);
+      setModels(result);
+      setTestResult({ ok: true, msg: t("settings.testSuccess", { count: result.length }) });
+    } catch (e) {
+      setTestResult({ ok: false, msg: String(e) });
+    } finally {
+      setTesting(false);
+    }
+  }, [provider.id, settings, t]);
+
+  const hasKey = provider.needsKey ? !!settings.api_key : true;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between text-base">
+          {provider.label}
+          {testResult && (
+            <Badge variant={testResult.ok ? "default" : "destructive"}>
+              {testResult.ok ? t("settings.connected") : t("settings.failed")}
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* API Key or Base URL */}
+        {provider.needsKey ? (
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">API Key</label>
+            <Input
+              type="password"
+              value={settings.api_key || ""}
+              onChange={(e) => onChange({ ...settings, api_key: e.target.value || null })}
+              placeholder={provider.placeholder}
+            />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Base URL</label>
+            <Input
+              value={settings.base_url || ""}
+              onChange={(e) => onChange({ ...settings, base_url: e.target.value || null })}
+              placeholder={provider.placeholder}
+            />
+          </div>
+        )}
+
+        {/* Test + Model row */}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleTest}
+            disabled={testing || !hasKey}
+          >
+            {testing ? t("settings.testing") : t("settings.test")}
+          </Button>
+
+          {models.length > 0 ? (
+            <Select
+              value={settings.model || ""}
+              onValueChange={(v) => onChange({ ...settings, model: v })}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder={t("settings.selectModel")} />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="text-xs text-muted-foreground">
+              {t("settings.testFirst")}
+            </span>
+          )}
+        </div>
+
+        {/* Error message */}
+        {testResult && !testResult.ok && (
+          <p className="text-xs text-red-500">{testResult.msg}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Settings() {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<AppSettings>({
-    llm_provider: "openai",
-    llm_model: null,
-    openai_api_key: null,
-    anthropic_api_key: null,
-    google_api_key: null,
-    groq_api_key: null,
-    ollama_base_url: null,
+    openai: null,
+    anthropic: null,
+    google: null,
+    groq: null,
+    ollama: null,
   });
-  const [models, setModels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
-    getSettings().then(setSettings).catch(console.error);
+    getSettings()
+      .then((s) => setSettings(s as unknown as AppSettings))
+      .catch(console.error);
   }, []);
 
-  // Reset models when provider changes — user needs to test connection again
-  useEffect(() => {
-    setModels([]);
-    setTestResult(null);
-  }, [settings.llm_provider]);
-
-  const update = (key: keyof AppSettings, value: string | null) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const updateProvider = (id: ProviderId, ps: ProviderSettings) => {
+    setSettings((prev) => ({ ...prev, [id]: ps }));
     setSaved(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await saveSettings(settings);
+      await saveSettings(settings as never);
       setSaved(true);
     } catch (e) {
       console.error(e);
@@ -78,41 +198,6 @@ export default function Settings() {
       setSaving(false);
     }
   };
-
-  const buildConfig = (): LlmConfig => {
-    const apiKey =
-      provider === "openai" ? settings.openai_api_key :
-      provider === "anthropic" ? settings.anthropic_api_key :
-      provider === "google" ? settings.google_api_key :
-      provider === "groq" ? settings.groq_api_key :
-      undefined;
-
-    return {
-      provider,
-      model: settings.llm_model || models[0] || "",
-      api_key: apiKey,
-      base_url: provider === "ollama" ? (settings.ollama_base_url || "http://localhost:11434") : null,
-    };
-  };
-
-  const handleTest = async () => {
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const remoteModels = await testLlmConnection(buildConfig());
-      setModels(remoteModels);
-      setTestResult({
-        ok: true,
-        message: t("settings.testSuccess", { count: remoteModels.length }),
-      });
-    } catch (e) {
-      setTestResult({ ok: false, message: String(e) });
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const provider = settings.llm_provider || "openai";
 
   return (
     <>
@@ -125,133 +210,22 @@ export default function Settings() {
         </div>
       </header>
 
-      <div className="flex-1 space-y-6 p-6 max-w-2xl">
-        {/* LLM Provider */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.llmProvider")}</CardTitle>
-            <CardDescription>{t("settings.llmProviderDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("settings.provider")}</label>
-              <Select value={provider} onValueChange={(v) => update("llm_provider", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROVIDERS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("settings.model")}</label>
-              {models.length > 0 ? (
-                <Select
-                  value={settings.llm_model || ""}
-                  onValueChange={(v) => update("llm_model", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("settings.selectModel")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t("settings.testFirst")}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* API Keys */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.apiKeys")}</CardTitle>
-            <CardDescription>{t("settings.apiKeysDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {provider === "openai" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">OpenAI API Key</label>
-                <Input
-                  type="password"
-                  value={settings.openai_api_key || ""}
-                  onChange={(e) => update("openai_api_key", e.target.value || null)}
-                  placeholder="sk-..."
-                />
-              </div>
-            )}
-            {provider === "anthropic" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Anthropic API Key</label>
-                <Input
-                  type="password"
-                  value={settings.anthropic_api_key || ""}
-                  onChange={(e) => update("anthropic_api_key", e.target.value || null)}
-                  placeholder="sk-ant-..."
-                />
-              </div>
-            )}
-            {provider === "google" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Google API Key</label>
-                <Input
-                  type="password"
-                  value={settings.google_api_key || ""}
-                  onChange={(e) => update("google_api_key", e.target.value || null)}
-                  placeholder="AIza..."
-                />
-              </div>
-            )}
-            {provider === "groq" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Groq API Key</label>
-                <Input
-                  type="password"
-                  value={settings.groq_api_key || ""}
-                  onChange={(e) => update("groq_api_key", e.target.value || null)}
-                  placeholder="gsk_..."
-                />
-              </div>
-            )}
-            {provider === "ollama" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Ollama Base URL</label>
-                <Input
-                  value={settings.ollama_base_url || ""}
-                  onChange={(e) => update("ollama_base_url", e.target.value || null)}
-                  placeholder="http://localhost:11434"
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="flex-1 space-y-4 p-6 max-w-2xl">
+        {PROVIDERS.map((p) => (
+          <ProviderCard
+            key={p.id}
+            provider={p}
+            settings={settings[p.id] || empty()}
+            onChange={(ps) => updateProvider(p.id, ps)}
+          />
+        ))}
 
         <div className="flex items-center gap-3">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? t("settings.saving") : t("settings.save")}
           </Button>
-          <Button variant="outline" onClick={handleTest} disabled={testing}>
-            {testing ? t("settings.testing") : t("settings.test")}
-          </Button>
           {saved && (
             <span className="text-sm text-emerald-500">{t("settings.saved")}</span>
-          )}
-          {testResult && (
-            <span className={`text-sm ${testResult.ok ? "text-emerald-500" : "text-red-500"}`}>
-              {testResult.message}
-            </span>
           )}
         </div>
       </div>

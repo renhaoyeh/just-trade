@@ -88,20 +88,15 @@
   },
   "settings": {
     "title": "Settings",
-    "llmProvider": "AI Model Settings",
-    "llmProviderDesc": "Choose your AI model provider and model",
-    "provider": "Provider",
-    "model": "Model",
     "selectModel": "Select a model",
-    "modelPlaceholder": "Enter model name",
-    "apiKeys": "API Keys",
-    "apiKeysDesc": "Enter the API key for the selected provider",
     "save": "Save",
     "saving": "Saving...",
     "saved": "Saved",
     "test": "Test Connection",
     "testing": "Testing...",
-    "testFirst": "Enter API key and test connection first",
-    "testSuccess": "Connected, {{count}} models available"
+    "testFirst": "Test connection to load models",
+    "testSuccess": "{{count}} models available",
+    "connected": "Connected",
+    "failed": "Failed"
   }
 }

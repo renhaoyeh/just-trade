@@ -43,14 +43,18 @@ export async function getSectorStocks(sector: string): Promise<SectorStock[]> {
 // Settings
 // ---------------------------------------------------------------------------
 
+export interface ProviderSettings {
+  api_key: string | null;
+  model: string | null;
+  base_url: string | null;
+}
+
 export interface AppSettings {
-  llm_provider: string | null;
-  llm_model: string | null;
-  openai_api_key: string | null;
-  anthropic_api_key: string | null;
-  google_api_key: string | null;
-  groq_api_key: string | null;
-  ollama_base_url: string | null;
+  openai: ProviderSettings | null;
+  anthropic: ProviderSettings | null;
+  google: ProviderSettings | null;
+  groq: ProviderSettings | null;
+  ollama: ProviderSettings | null;
 }
 
 export async function getSettings(): Promise<AppSettings> {
