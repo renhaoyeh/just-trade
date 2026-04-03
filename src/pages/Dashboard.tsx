@@ -87,9 +87,20 @@ function formatDate(daysAgo: number): string {
   return d.toISOString().split("T")[0];
 }
 
+const RANGE_OPTIONS = [
+  { label: "1M", days: 30, description: "近 1 個月" },
+  { label: "3M", days: 90, description: "近 3 個月" },
+  { label: "6M", days: 180, description: "近 6 個月" },
+  { label: "1Y", days: 365, description: "近 1 年" },
+  { label: "5Y", days: 1825, description: "近 5 年" },
+] as const;
+
+type RangeLabel = (typeof RANGE_OPTIONS)[number]["label"];
+
 export default function Dashboard() {
   const [searchSymbol, setSearchSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("2330.TW");
+  const [selectedRange, setSelectedRange] = useState<RangeLabel>("3M");
   const [priceHistory, setPriceHistory] = useState<StockPrice[]>([]);
   const [stockInfo, setStockInfo] = useState<StockInfo | null>(null);
   const [news, setNews] = useState<StockNews[]>([]);
@@ -99,12 +110,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStockData = useCallback(async (symbol: string) => {
+  const rangeConfig = RANGE_OPTIONS.find((r) => r.label === selectedRange)!;
+
+  const loadStockData = useCallback(async (symbol: string, days: number) => {
     setLoading(true);
     setError(null);
 
     const endDate = formatDate(0);
-    const startDate = formatDate(90); // 3 months
+    const startDate = formatDate(days);
 
     try {
       const [history, info, stockNews] = await Promise.all([
@@ -146,9 +159,9 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    loadStockData(selectedSymbol);
+    loadStockData(selectedSymbol, rangeConfig.days);
     loadWatchlist();
-  }, [loadStockData, loadWatchlist, selectedSymbol]);
+  }, [loadStockData, loadWatchlist, selectedSymbol, rangeConfig.days]);
 
   const handleSearch = () => {
     const symbol = searchSymbol.trim().toUpperCase();
@@ -269,15 +282,40 @@ export default function Dashboard() {
             </div>
 
             {/* Price Chart */}
-            {chartData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {selectedSymbol} 股價走勢
-                  </CardTitle>
-                  <CardDescription>近 3 個月日 K 線收盤價</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>
+                      {selectedSymbol} 股價走勢
+                    </CardTitle>
+                    <CardDescription>{rangeConfig.description}日 K 線收盤價</CardDescription>
+                  </div>
+                  <div className="flex gap-1">
+                    {RANGE_OPTIONS.map((opt) => (
+                      <Button
+                        key={opt.label}
+                        size="sm"
+                        variant={selectedRange === opt.label ? "default" : "outline"}
+                        onClick={() => setSelectedRange(opt.label)}
+                        className="h-7 px-2 text-xs"
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading && chartData.length === 0 ? (
+                  <div className="flex h-75 items-center justify-center text-muted-foreground">
+                    載入中...
+                  </div>
+                ) : chartData.length === 0 ? (
+                  <div className="flex h-75 items-center justify-center text-muted-foreground">
+                    無股價資料
+                  </div>
+                ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -290,19 +328,26 @@ export default function Dashboard() {
                         domain={["auto", "auto"]}
                         tick={{ fontSize: 12 }}
                       />
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "var(--color-popover)",
+                          color: "var(--color-popover-foreground)",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: 0,
+                        }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="close"
-                        stroke="hsl(var(--primary))"
+                        stroke="var(--color-primary)"
                         strokeWidth={2}
                         dot={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Tabs section */}
             <Tabs defaultValue="watchlist">
