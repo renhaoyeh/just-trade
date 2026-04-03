@@ -10,8 +10,7 @@
     "trade": "Trade",
     "history": "History",
     "sectors": "Sectors",
-    "analysis": "AI Analysis",
-    "analysisHistory": "Analysis History",
+    "tradingAgents": "TradingAgents",
     "watchlist": "Watchlist",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -116,16 +115,13 @@
     "run": "Run Analysis",
     "running": "Analyzing...",
     "progress": "Progress",
-    "history": "History",
+    "tabRun": "Run Analysis",
+    "tabHistory": "History",
+    "noHistory": "No analysis records yet",
     "phaseAnalysts": "Analysts",
     "phaseDebate": "Bull vs Bear Debate",
     "phaseDecision": "Investment Decision",
     "phaseRisk": "Risk Assessment",
     "phaseFinal": "Final Decision"
-  },
-  "analysisHistory": {
-    "title": "Analysis History",
-    "empty": "No analysis records yet",
-    "backToList": "Back to list"
   }
 }

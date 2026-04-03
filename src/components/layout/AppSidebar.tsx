@@ -3,7 +3,6 @@ import {
   Lightning,
   Buildings,
   Robot,
-  ClockCounterClockwise,
   GearSix,
 } from "@phosphor-icons/react";
 import {
@@ -24,8 +23,7 @@ import { useNavigate, useLocation } from "react-router";
 const mainNav = [
   { titleKey: "nav.dashboard", icon: ChartLine, path: "/" },
   { titleKey: "nav.sectors", icon: Buildings, path: "/sectors" },
-  { titleKey: "nav.analysis", icon: Robot, path: "/analysis" },
-  { titleKey: "nav.analysisHistory", icon: ClockCounterClockwise, path: "/analysis/history" },
+  { titleKey: "nav.tradingAgents", icon: Robot, path: "/trading-agents" },
   { titleKey: "nav.settings", icon: GearSix, path: "/settings" },
 ];
 

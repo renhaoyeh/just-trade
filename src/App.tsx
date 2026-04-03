@@ -4,7 +4,6 @@ import Dashboard from "@/pages/Dashboard";
 import Sectors from "@/pages/Sectors";
 import SectorDetail from "@/pages/SectorDetail";
 import Analysis from "@/pages/Analysis";
-import AnalysisHistory from "@/pages/AnalysisHistory";
 import Settings from "@/pages/Settings";
 
 function App() {
@@ -15,8 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/sectors" element={<Sectors />} />
           <Route path="/sectors/:sectorName" element={<SectorDetail />} />
-          <Route path="/analysis" element={<Analysis />} />
-          <Route path="/analysis/history" element={<AnalysisHistory />} />
+          <Route path="/trading-agents" element={<Analysis />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

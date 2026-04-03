@@ -10,8 +10,7 @@
     "trade": "交易",
     "history": "歷史紀錄",
     "sectors": "產業類股",
-    "analysis": "AI 分析",
-    "analysisHistory": "分析紀錄",
+    "tradingAgents": "TradingAgents",
     "watchlist": "自選清單",
     "settings": "設定",
     "signOut": "登出",
@@ -116,16 +115,13 @@
     "run": "開始分析",
     "running": "分析中...",
     "progress": "執行進度",
-    "history": "歷史紀錄",
+    "tabRun": "執行分析",
+    "tabHistory": "歷史紀錄",
+    "noHistory": "尚無分析紀錄",
     "phaseAnalysts": "分析師",
     "phaseDebate": "多空辯論",
     "phaseDecision": "投資決策",
     "phaseRisk": "風險評估",
     "phaseFinal": "最終決策"
-  },
-  "analysisHistory": {
-    "title": "分析紀錄",
-    "empty": "尚無分析紀錄",
-    "backToList": "返回列表"
   }
 }

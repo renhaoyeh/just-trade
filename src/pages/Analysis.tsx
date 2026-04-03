@@ -22,6 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   runAnalysis,
   getSettings,
@@ -327,7 +328,15 @@ export default function Analysis() {
         </div>
       </header>
 
-      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
+      <Tabs defaultValue="run" className="flex-1 flex flex-col overflow-hidden">
+        <div className="border-b px-6 pt-2">
+          <TabsList>
+            <TabsTrigger value="run">{t("analysis.tabRun")}</TabsTrigger>
+            <TabsTrigger value="history">{t("analysis.tabHistory")}</TabsTrigger>
+          </TabsList>
+        </div>
+
+      <TabsContent value="run" className="flex-1 flex gap-4 p-6 overflow-hidden m-0">
         {/* Left: Config */}
         <div className="w-72 shrink-0 space-y-4 overflow-y-auto">
           <Card>
@@ -372,31 +381,6 @@ export default function Analysis() {
             </CardContent>
           </Card>
 
-          {/* History */}
-          {history.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t("analysis.history")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {history.map((h) => (
-                  <button
-                    key={h.id}
-                    className="flex w-full items-center gap-2 rounded-md border p-2 text-left text-sm hover:bg-muted/50"
-                    onClick={() => loadHistory(h)}
-                  >
-                    <Badge className={signalColor(h.signal)} variant="default">
-                      {h.signal}
-                    </Badge>
-                    <span className="flex-1 font-medium">{h.symbol}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {h.created_at.split(" ")[0]}
-                    </span>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Right: Phase-grouped grid */}
@@ -487,7 +471,34 @@ export default function Analysis() {
             <div ref={bottomRef} />
           </div>
         </ScrollArea>
-      </div>
+      </TabsContent>
+
+      <TabsContent value="history" className="flex-1 p-6 overflow-y-auto m-0">
+        {history.length === 0 ? (
+          <p className="text-muted-foreground">{t("analysis.noHistory")}</p>
+        ) : (
+          <div className="space-y-2 max-w-3xl">
+            {history.map((h) => (
+              <Card
+                key={h.id}
+                className="cursor-pointer transition-colors hover:bg-muted/50"
+                onClick={() => loadHistory(h)}
+              >
+                <CardHeader className="py-3">
+                  <div className="flex items-center gap-3">
+                    <Badge className={signalColor(h.signal)} variant="default">
+                      {h.signal}
+                    </Badge>
+                    <CardTitle className="text-base flex-1">{h.symbol}</CardTitle>
+                    <span className="text-sm text-muted-foreground">{h.created_at}</span>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        )}
+      </TabsContent>
+      </Tabs>
     </>
   );
 }
