@@ -101,6 +101,6 @@
     "saved": "Saved",
     "test": "Test Connection",
     "testing": "Testing...",
-    "testSuccess": "Connected ({{model}})"
+    "testSuccess": "Connected, {{count}} models available"
   }
 }

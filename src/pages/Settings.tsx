@@ -82,26 +82,32 @@ export default function Settings() {
     }
   };
 
+  const buildConfig = (): LlmConfig => {
+    const apiKey =
+      provider === "openai" ? settings.openai_api_key :
+      provider === "anthropic" ? settings.anthropic_api_key :
+      provider === "google" ? settings.google_api_key :
+      provider === "groq" ? settings.groq_api_key :
+      undefined;
+
+    return {
+      provider,
+      model: settings.llm_model || models[0] || "",
+      api_key: apiKey,
+      base_url: provider === "ollama" ? (settings.ollama_base_url || "http://localhost:11434") : null,
+    };
+  };
+
   const handleTest = async () => {
     setTesting(true);
     setTestResult(null);
     try {
-      const apiKey =
-        provider === "openai" ? settings.openai_api_key :
-        provider === "anthropic" ? settings.anthropic_api_key :
-        provider === "google" ? settings.google_api_key :
-        provider === "groq" ? settings.groq_api_key :
-        undefined;
-
-      const config: LlmConfig = {
-        provider,
-        model: settings.llm_model || models[0] || "",
-        api_key: apiKey,
-        base_url: provider === "ollama" ? (settings.ollama_base_url || "http://localhost:11434/v1") : null,
-      };
-
-      const model = await testLlmConnection(config);
-      setTestResult({ ok: true, message: t("settings.testSuccess", { model }) });
+      const remoteModels = await testLlmConnection(buildConfig());
+      setModels(remoteModels);
+      setTestResult({
+        ok: true,
+        message: t("settings.testSuccess", { count: remoteModels.length }),
+      });
     } catch (e) {
       setTestResult({ ok: false, message: String(e) });
     } finally {

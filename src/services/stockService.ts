@@ -73,7 +73,7 @@ export interface LlmConfig {
   thinking_level?: string | null;
 }
 
-export async function testLlmConnection(config: LlmConfig): Promise<string> {
+export async function testLlmConnection(config: LlmConfig): Promise<string[]> {
   return invoke("llm_test", { config });
 }
 
