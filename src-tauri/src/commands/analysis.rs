@@ -143,6 +143,7 @@ async fn run_or_load_step(
     config: &LlmConfig,
     symbol: &str,
     today: &str,
+    step_key: &str,
     agent_id: &str,
     agent_name: &str,
     phase: &str,
@@ -151,18 +152,18 @@ async fn run_or_load_step(
     cooldown_secs: u64,
     cached_steps: &HashMap<String, String>,
 ) -> Result<String, String> {
-    // Check cache first
-    if let Some(content) = cached_steps.get(agent_id) {
+    // Check cache first (by step_key)
+    if let Some(content) = cached_steps.get(step_key) {
         emit_progress(app, phase, agent_name, "done", Some(content));
         return Ok(content.clone());
     }
 
-    // Run LLM
+    // Run LLM (by agent_id for prompt lookup)
     emit_progress(app, phase, agent_name, "running", None);
     match call_agent(app, config, agent_id, prompt, vars, cooldown_secs).await {
         Ok(resp) => {
             // Save step to DB immediately
-            let _ = db::analysis::save_step(pool, symbol, today, agent_id, phase, &resp).await;
+            let _ = db::analysis::save_step(pool, symbol, today, step_key, phase, &resp).await;
             emit_progress(app, phase, agent_name, "done", Some(&resp));
             Ok(resp)
         }
@@ -231,7 +232,7 @@ pub async fn run_analysis(
         }
         let report = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            agent_id, name, "analysts", &prompt, &HashMap::new(),
+            agent_id, agent_id, name, "analysts", &prompt, &HashMap::new(),
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         match *field {
@@ -257,10 +258,10 @@ pub async fn run_analysis(
         vars.insert("current_response".into(), current_response.clone());
         vars.insert("past_memory_str".into(), String::new());
 
-        let bull_id = format!("bull_researcher_r{}", round + 1);
+        let bull_key = format!("bull_researcher_r{}", round + 1);
         let resp = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            &bull_id, "Bull Researcher", "debate", &prompt, &vars,
+            &bull_key, "bull_researcher", "Bull Researcher", "debate", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         debate_history.push_str(&format!("\n\n**Bull (Round {}):**\n{resp}", round + 1));
@@ -270,10 +271,10 @@ pub async fn run_analysis(
         vars.insert("history".into(), debate_history.clone());
         vars.insert("current_response".into(), current_response.clone());
 
-        let bear_id = format!("bear_researcher_r{}", round + 1);
+        let bear_key = format!("bear_researcher_r{}", round + 1);
         let resp = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            &bear_id, "Bear Researcher", "debate", &prompt, &vars,
+            &bear_key, "bear_researcher", "Bear Researcher", "debate", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         debate_history.push_str(&format!("\n\n**Bear (Round {}):**\n{resp}", round + 1));
@@ -290,7 +291,7 @@ pub async fn run_analysis(
 
         result.investment_decision = run_or_load_step(
             &app, pool_ref, deep, &symbol, &today,
-            "research_manager", "Research Manager", "decision", &prompt, &vars,
+            "research_manager", "research_manager", "Research Manager", "decision", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
     }
@@ -305,7 +306,7 @@ pub async fn run_analysis(
         );
         result.trader_plan = run_or_load_step(
             &app, pool_ref, deep, &symbol, &today,
-            "trader", "Trader", "decision", &trader_prompt, &vars,
+            "trader", "trader", "Trader", "decision", &trader_prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
     }
@@ -327,10 +328,10 @@ pub async fn run_analysis(
         vars.insert("current_conservative_response".into(), con_resp.clone());
         vars.insert("current_neutral_response".into(), neu_resp.clone());
 
-        let agg_id = format!("aggressive_risk_r{}", round + 1);
+        let agg_key = format!("aggressive_risk_r{}", round + 1);
         let resp = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            &agg_id, "Aggressive Analyst", "risk", &prompt, &vars,
+            &agg_key, "aggressive_risk", "Aggressive Analyst", "risk", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         risk_history.push_str(&format!("\n\n**Aggressive (Round {}):**\n{resp}", round + 1));
@@ -340,10 +341,10 @@ pub async fn run_analysis(
         vars.insert("history".into(), risk_history.clone());
         vars.insert("current_aggressive_response".into(), agg_resp.clone());
 
-        let con_id = format!("conservative_risk_r{}", round + 1);
+        let con_key = format!("conservative_risk_r{}", round + 1);
         let resp = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            &con_id, "Conservative Analyst", "risk", &prompt, &vars,
+            &con_key, "conservative_risk", "Conservative Analyst", "risk", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         risk_history.push_str(&format!("\n\n**Conservative (Round {}):**\n{resp}", round + 1));
@@ -353,10 +354,10 @@ pub async fn run_analysis(
         vars.insert("history".into(), risk_history.clone());
         vars.insert("current_conservative_response".into(), con_resp.clone());
 
-        let neu_id = format!("neutral_risk_r{}", round + 1);
+        let neu_key = format!("neutral_risk_r{}", round + 1);
         let resp = run_or_load_step(
             &app, pool_ref, quick, &symbol, &today,
-            &neu_id, "Neutral Analyst", "risk", &prompt, &vars,
+            &neu_key, "neutral_risk", "Neutral Analyst", "risk", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         risk_history.push_str(&format!("\n\n**Neutral (Round {}):**\n{resp}", round + 1));
@@ -374,7 +375,7 @@ pub async fn run_analysis(
 
         result.final_decision = run_or_load_step(
             &app, pool_ref, deep, &symbol, &today,
-            "portfolio_manager", "Portfolio Manager", "final", &prompt, &vars,
+            "portfolio_manager", "portfolio_manager", "Portfolio Manager", "final", &prompt, &vars,
             pipeline_config.cooldown_secs, &cached_steps,
         ).await?;
         result.signal = extract_signal(&result.final_decision);
