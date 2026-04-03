@@ -106,6 +106,7 @@ pub fn run_backtest(
     let mut total_commission = 0.0;
     let mut total_tax = 0.0;
     let mut total_invested = 0.0;
+    let mut is_dca = false;
 
     for (i, (price, signal)) in prices.iter().zip(signals.iter()).enumerate() {
         match signal {
@@ -134,6 +135,7 @@ pub fn run_backtest(
             }
             Signal::BuyFixed(budget) => {
                 // DCA: buy a fixed dollar amount worth of shares
+                is_dca = true;
                 let spend = budget.min(cash);
                 let buy_shares = (spend / (price.close * (1.0 + config.commission_rate))) as i64;
                 if buy_shares > 0 {
@@ -225,9 +227,14 @@ pub fn run_backtest(
 
     // Compute metrics
     let final_equity = equity_curve.last().map(|e| e.equity).unwrap_or(config.initial_capital);
-    // Return based on total_invested so DCA isn't diluted by idle cash
+    // DCA: return based on actual invested amount (not idle cash)
+    // All-in strategies: return based on initial capital (same money recycled)
     let profit = final_equity - config.initial_capital;
-    let return_base = if total_invested > 0.0 { total_invested } else { config.initial_capital };
+    let return_base = if is_dca && total_invested > 0.0 {
+        total_invested
+    } else {
+        config.initial_capital
+    };
     let total_return_pct = if return_base > 0.0 {
         profit / return_base * 100.0
     } else {
