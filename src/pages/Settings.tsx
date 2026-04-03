@@ -88,9 +88,10 @@ function ProviderCard({
 
   const hasKey = provider.needsKey ? !!settings.api_key : true;
 
-  // Auto-fetch models on mount if key exists
+  // Auto-fetch models on mount if credentials exist
+  const hasCredentials = provider.needsKey ? !!settings.api_key : !!settings.base_url;
   useEffect(() => {
-    if (hasKey && models.length === 0 && !testing) {
+    if (hasCredentials && models.length === 0 && !testing) {
       handleTest();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
