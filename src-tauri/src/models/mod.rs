@@ -1,3 +1,4 @@
+pub mod sector;
 pub mod stock_info;
 pub mod stock_news;
 pub mod stock_price;

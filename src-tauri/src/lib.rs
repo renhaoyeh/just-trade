@@ -10,9 +10,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // Initialize Yahoo Finance client
+            // Initialize API clients
             let yahoo_client = services::yahoo::YahooClient::new();
             app.manage(yahoo_client);
+            let twse_client = services::twse::TwseClient::new();
+            app.manage(twse_client);
 
             // Initialize SQLite database in app data directory
             let app_data = app.path().app_data_dir().expect("Failed to get app data dir");
@@ -31,6 +33,8 @@ pub fn run() {
             commands::stock::get_stock_info,
             commands::stock::fetch_stock_news,
             commands::stock::search_stocks,
+            commands::sector::get_sectors,
+            commands::sector::get_sector_stocks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

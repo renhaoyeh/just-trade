@@ -1,3 +1,4 @@
+pub mod sectors;
 pub mod stock_prices;
 
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
