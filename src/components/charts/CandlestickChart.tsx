@@ -3,9 +3,9 @@ import {
   createChart,
   ColorType,
   CrosshairMode,
+  CandlestickSeries,
+  HistogramSeries,
   type IChartApi,
-  type ISeriesApi,
-  type CandlestickSeriesOptions,
 } from "lightweight-charts";
 import type { StockPrice } from "@/types/stock";
 
@@ -17,8 +17,10 @@ interface CandlestickChartProps {
 export function CandlestickChart({ data, height = 400 }: CandlestickChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const candleSeriesRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const volumeSeriesRef = useRef<any>(null);
 
   // Create chart once
   useEffect(() => {
@@ -45,16 +47,16 @@ export function CandlestickChart({ data, height = 400 }: CandlestickChartProps) 
       autoSize: true,
     });
 
-    const candleSeries = chart.addCandlestickSeries({
+    const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#ef4444",
       downColor: "#22c55e",
       borderUpColor: "#ef4444",
       borderDownColor: "#22c55e",
       wickUpColor: "#ef4444",
       wickDownColor: "#22c55e",
-    } as CandlestickSeriesOptions);
+    });
 
-    const volumeSeries = chart.addHistogramSeries({
+    const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: "volume" },
       priceScaleId: "volume",
     });
