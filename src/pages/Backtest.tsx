@@ -272,6 +272,9 @@ export default function Backtest() {
         {/* Compare Results */}
         {compareResults.length > 0 && (
           <>
+            {/* Benchmark Banner */}
+            <BenchmarkBanner benchmark={compareResults[0].result.benchmark} symbol={symbol} t={t} />
+
             {/* Comparison Table */}
             <Card>
               <CardHeader className="pb-3">
@@ -419,6 +422,8 @@ export default function Backtest() {
         {/* Single Result */}
         {result && compareResults.length === 0 && (
           <>
+            <BenchmarkBanner benchmark={result.benchmark} symbol={symbol} t={t} />
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <MetricCard
                 label={t("backtest.totalReturn")}
@@ -583,6 +588,34 @@ function DetailRow({ label, value, className }: { label: string; value: string; 
       <span className="text-muted-foreground">{label}</span>
       <span className={className}>{value}</span>
     </div>
+  );
+}
+
+function BenchmarkBanner({
+  benchmark,
+  symbol,
+  t,
+}: {
+  benchmark: { start_price: number; end_price: number; return_pct: number };
+  symbol: string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
+  const up = benchmark.return_pct >= 0;
+  return (
+    <Card className={up ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"}>
+      <CardContent className="py-3 flex items-center justify-between">
+        <div className="text-sm">
+          <span className="text-muted-foreground">{t("backtest.benchmark")} </span>
+          <span className="font-medium">{symbol}</span>
+          <span className="text-muted-foreground">
+            {" "}{benchmark.start_price.toFixed(2)} → {benchmark.end_price.toFixed(2)}
+          </span>
+        </div>
+        <div className={`text-xl font-bold ${up ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+          {up ? "+" : ""}{benchmark.return_pct.toFixed(2)}%
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

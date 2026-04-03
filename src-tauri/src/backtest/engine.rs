@@ -79,10 +79,19 @@ pub struct BacktestMetrics {
     pub trading_days: usize,
 }
 
+/// Buy & hold benchmark: just buy on day 1, sell on last day.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BuyHoldBenchmark {
+    pub start_price: f64,
+    pub end_price: f64,
+    pub return_pct: f64,
+}
+
 /// Full backtest result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BacktestResult {
     pub symbol: String,
+    pub benchmark: BuyHoldBenchmark,
     pub metrics: BacktestMetrics,
     pub trades: Vec<Trade>,
     pub equity_curve: Vec<EquityPoint>,
@@ -281,8 +290,21 @@ pub fn run_backtest(
         })
         .collect();
 
+    let start_price = prices.first().map(|p| p.close).unwrap_or(0.0);
+    let end_price = prices.last().map(|p| p.close).unwrap_or(0.0);
+    let benchmark = BuyHoldBenchmark {
+        start_price,
+        end_price,
+        return_pct: if start_price > 0.0 {
+            (end_price / start_price - 1.0) * 100.0
+        } else {
+            0.0
+        },
+    };
+
     BacktestResult {
         symbol: symbol.to_string(),
+        benchmark,
         metrics,
         trades,
         equity_curve,

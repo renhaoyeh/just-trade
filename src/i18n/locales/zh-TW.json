@@ -202,6 +202,7 @@
     "running": "回測中...",
     "compareAll": "全部比較",
     "comparing": "比較中...",
+    "benchmark": "買入持有",
     "compareResult": "策略比較",
     "noTrades": "無交易紀錄",
     "totalReturn": "總報酬率",

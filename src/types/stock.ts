@@ -151,8 +151,15 @@ export interface PriceBar {
   volume: number;
 }
 
+export interface BuyHoldBenchmark {
+  start_price: number;
+  end_price: number;
+  return_pct: number;
+}
+
 export interface BacktestResult {
   symbol: string;
+  benchmark: BuyHoldBenchmark;
   metrics: BacktestMetrics;
   trades: BacktestTrade[];
   equity_curve: EquityPoint[];
