@@ -142,6 +142,20 @@ pub async fn run_analysis(
     symbol: String,
     pipeline_config: PipelineConfig,
 ) -> Result<AnalysisResult, String> {
+    // Check if today's analysis already exists and is complete
+    let pool = app.state::<SqlitePool>();
+    if let Ok(Some(existing)) = db::analysis::get_today_analysis(pool.inner(), &symbol).await {
+        if let Ok(content) = std::fs::read_to_string(&existing.report_path) {
+            if let Ok(result) = serde_json::from_str::<AnalysisResult>(&content) {
+                // Only reuse if the pipeline actually completed (has final decision + signal)
+                if !result.final_decision.is_empty() && !result.signal.is_empty() {
+                    emit_progress(&app, "complete", "", "done", Some(&result.signal));
+                    return Ok(result);
+                }
+            }
+        }
+    }
+
     let quick = &pipeline_config.quick_llm;
     let deep = &pipeline_config.deep_llm;
 

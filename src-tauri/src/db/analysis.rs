@@ -31,6 +31,25 @@ pub async fn save_analysis(
     Ok(result.last_insert_rowid())
 }
 
+/// Check if an analysis for this symbol already exists today.
+pub async fn get_today_analysis(
+    pool: &SqlitePool,
+    symbol: &str,
+) -> Result<Option<AnalysisRecord>, sqlx::Error> {
+    sqlx::query_as::<_, AnalysisRecord>(
+        r#"
+        SELECT id, symbol, signal, created_at, report_path
+        FROM analysis_history
+        WHERE symbol = ? AND date(created_at) = date('now')
+        ORDER BY created_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(symbol)
+    .fetch_optional(pool)
+    .await
+}
+
 pub async fn get_analysis_history(
     pool: &SqlitePool,
     limit: i64,
