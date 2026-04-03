@@ -83,6 +83,24 @@ export async function testLlmConnection(config: LlmConfig): Promise<GroupedModel
   return invoke("llm_test", { config });
 }
 
+export interface PipelineConfig {
+  quick_llm: LlmConfig;
+  deep_llm: LlmConfig;
+  max_debate_rounds: number;
+  max_risk_rounds: number;
+  enable_market_analyst: boolean;
+  enable_news_analyst: boolean;
+  enable_fundamentals_analyst: boolean;
+  enable_social_analyst: boolean;
+}
+
+export async function runAnalysis(
+  symbol: string,
+  pipelineConfig: PipelineConfig
+): Promise<unknown> {
+  return invoke("run_analysis", { symbol, pipelineConfig });
+}
+
 export async function getLlmModels(provider: string): Promise<string[]> {
   return invoke("llm_models", { provider });
 }

@@ -10,7 +10,7 @@
     "trade": "Trade",
     "history": "History",
     "sectors": "Sectors",
-    "settings": "Settings",
+    "analysis": "AI Analysis",
     "watchlist": "Watchlist",
     "settings": "Settings",
     "signOut": "Sign Out",
@@ -99,5 +99,20 @@
     "testSuccess": "{{count}} models available",
     "connected": "Connected",
     "failed": "Failed"
+  },
+  "analysis": {
+    "title": "AI Analysis",
+    "config": "Analysis Config",
+    "symbol": "Stock Symbol",
+    "debateRounds": "Bull/Bear Debate Rounds",
+    "riskRounds": "Risk Debate Rounds",
+    "analysts": "Enable Analysts",
+    "marketAnalyst": "Technical Analysis",
+    "newsAnalyst": "News Analysis",
+    "fundamentalsAnalyst": "Fundamentals Analysis",
+    "socialAnalyst": "Social Sentiment",
+    "run": "Run Analysis",
+    "running": "Analyzing...",
+    "progress": "Progress"
   }
 }

@@ -43,6 +43,7 @@ pub fn run() {
             commands::llm::llm_test,
             commands::llm::llm_agents,
             commands::llm::llm_agent_chat,
+            commands::analysis::run_analysis,
             commands::settings::get_settings,
             commands::settings::save_settings,
         ])

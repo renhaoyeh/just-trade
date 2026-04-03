@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 import Sectors from "@/pages/Sectors";
 import SectorDetail from "@/pages/SectorDetail";
+import Analysis from "@/pages/Analysis";
 import Settings from "@/pages/Settings";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/sectors" element={<Sectors />} />
           <Route path="/sectors/:sectorName" element={<SectorDetail />} />
+          <Route path="/analysis" element={<Analysis />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

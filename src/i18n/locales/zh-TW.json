@@ -10,7 +10,7 @@
     "trade": "交易",
     "history": "歷史紀錄",
     "sectors": "產業類股",
-    "settings": "設定",
+    "analysis": "AI 分析",
     "watchlist": "自選清單",
     "settings": "設定",
     "signOut": "登出",
@@ -99,5 +99,20 @@
     "testSuccess": "{{count}} 個可用模型",
     "connected": "已連線",
     "failed": "連線失敗"
+  },
+  "analysis": {
+    "title": "AI 分析",
+    "config": "分析設定",
+    "symbol": "股票代號",
+    "debateRounds": "多空辯論回合數",
+    "riskRounds": "風險辯論回合數",
+    "analysts": "啟用分析師",
+    "marketAnalyst": "技術面分析",
+    "newsAnalyst": "新聞分析",
+    "fundamentalsAnalyst": "基本面分析",
+    "socialAnalyst": "社群輿情分析",
+    "run": "開始分析",
+    "running": "分析中...",
+    "progress": "執行進度"
   }
 }
