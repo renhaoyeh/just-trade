@@ -168,7 +168,14 @@ export type StrategyConfig =
   | { type: "Rsi"; period: number; overbought: number; oversold: number }
   | { type: "BollingerBands"; period: number; std_dev: number }
   | { type: "Macd"; fast_period: number; slow_period: number; signal_period: number }
-  | { type: "Dca"; amount: number; interval_days: number };
+  | { type: "Dca"; amount: number; interval_days: number }
+  | { type: "Stochastic"; k_period: number; d_period: number; overbought: number; oversold: number }
+  | { type: "EmaCrossover"; short_period: number; long_period: number }
+  | { type: "Supertrend"; period: number; multiplier: number }
+  | { type: "DonchianBreakout"; period: number }
+  | { type: "WilliamsR"; period: number; overbought: number; oversold: number }
+  | { type: "Cci"; period: number; overbought: number; oversold: number }
+  | { type: "ParabolicSar"; af_start: number; af_increment: number; af_max: number };
 
 export interface RunBacktestParams {
   symbol: string;

@@ -185,7 +185,14 @@
       "Rsi": "RSI",
       "BollingerBands": "布林通道",
       "Macd": "MACD",
-      "Dca": "定期定額"
+      "Dca": "定期定額",
+      "Stochastic": "KD 隨機指標",
+      "EmaCrossover": "EMA 交叉",
+      "Supertrend": "超級趨勢",
+      "DonchianBreakout": "唐奇安突破",
+      "WilliamsR": "威廉指標",
+      "Cci": "CCI 順勢指標",
+      "ParabolicSar": "拋物線 SAR"
     },
     "params": {
       "period": "週期",
@@ -196,7 +203,13 @@
       "slowPeriod": "慢線週期",
       "signalPeriod": "訊號線週期",
       "amount": "每期金額",
-      "intervalDays": "間隔交易日"
+      "intervalDays": "間隔交易日",
+      "kPeriod": "K 週期",
+      "dPeriod": "D 週期",
+      "multiplier": "倍數",
+      "afStart": "初始加速因子",
+      "afIncrement": "加速因子增量",
+      "afMax": "最大加速因子"
     },
     "run": "開始回測",
     "running": "回測中...",

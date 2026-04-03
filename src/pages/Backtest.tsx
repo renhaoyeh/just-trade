@@ -32,15 +32,29 @@ const STRATEGY_TYPES = [
   "BollingerBands",
   "Macd",
   "Dca",
+  "Stochastic",
+  "EmaCrossover",
+  "Supertrend",
+  "DonchianBreakout",
+  "WilliamsR",
+  "Cci",
+  "ParabolicSar",
 ] as const;
 type StrategyType = (typeof STRATEGY_TYPES)[number];
 
 const STRATEGY_COLORS: Record<StrategyType, string> = {
-  SmaCrossover: "#3b82f6", // blue
-  Rsi: "#f59e0b",          // amber
-  BollingerBands: "#10b981", // emerald
-  Macd: "#8b5cf6",          // violet
-  Dca: "#ec4899",           // pink
+  SmaCrossover: "#3b82f6",    // blue
+  Rsi: "#f59e0b",             // amber
+  BollingerBands: "#10b981",  // emerald
+  Macd: "#8b5cf6",            // violet
+  Dca: "#ec4899",             // pink
+  Stochastic: "#ef4444",      // red
+  EmaCrossover: "#06b6d4",    // cyan
+  Supertrend: "#f97316",      // orange
+  DonchianBreakout: "#14b8a6",// teal
+  WilliamsR: "#a855f7",       // purple
+  Cci: "#84cc16",             // lime
+  ParabolicSar: "#e11d48",    // rose
 };
 
 function defaultStrategyConfig(type: StrategyType): StrategyConfig {
@@ -55,6 +69,20 @@ function defaultStrategyConfig(type: StrategyType): StrategyConfig {
       return { type: "Macd", fast_period: 12, slow_period: 26, signal_period: 9 };
     case "Dca":
       return { type: "Dca", amount: 10000, interval_days: 22 };
+    case "Stochastic":
+      return { type: "Stochastic", k_period: 14, d_period: 3, overbought: 80, oversold: 20 };
+    case "EmaCrossover":
+      return { type: "EmaCrossover", short_period: 12, long_period: 26 };
+    case "Supertrend":
+      return { type: "Supertrend", period: 10, multiplier: 3.0 };
+    case "DonchianBreakout":
+      return { type: "DonchianBreakout", period: 20 };
+    case "WilliamsR":
+      return { type: "WilliamsR", period: 14, overbought: -20, oversold: -80 };
+    case "Cci":
+      return { type: "Cci", period: 20, overbought: 100, oversold: -100 };
+    case "ParabolicSar":
+      return { type: "ParabolicSar", af_start: 0.02, af_increment: 0.02, af_max: 0.2 };
   }
 }
 
@@ -237,7 +265,7 @@ export default function Backtest() {
               <label className="text-xs text-muted-foreground">
                 {t("backtest.strategy")}
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {STRATEGY_TYPES.map((st) => (
                   <Button
                     key={st}
@@ -559,6 +587,57 @@ function StrategyParams({
         <>
           <ParamInput label={t("backtest.params.amount")} value={config.amount} onChange={(v) => onUpdate("amount", v)} min={1000} step={1000} />
           <ParamInput label={t("backtest.params.intervalDays")} value={config.interval_days} onChange={(v) => onUpdate("interval_days", v)} min={1} />
+        </>
+      );
+    case "Stochastic":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.kPeriod")} value={config.k_period} onChange={(v) => onUpdate("k_period", v)} min={2} />
+          <ParamInput label={t("backtest.params.dPeriod")} value={config.d_period} onChange={(v) => onUpdate("d_period", v)} min={2} />
+          <ParamInput label={t("backtest.params.overbought")} value={config.overbought} onChange={(v) => onUpdate("overbought", v)} min={50} max={100} />
+          <ParamInput label={t("backtest.params.oversold")} value={config.oversold} onChange={(v) => onUpdate("oversold", v)} min={0} max={50} />
+        </>
+      );
+    case "EmaCrossover":
+      return (
+        <>
+          <ParamInput label={t("backtest.shortMa")} value={config.short_period} onChange={(v) => onUpdate("short_period", v)} min={1} />
+          <ParamInput label={t("backtest.longMa")} value={config.long_period} onChange={(v) => onUpdate("long_period", v)} min={2} />
+        </>
+      );
+    case "Supertrend":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+          <ParamInput label={t("backtest.params.multiplier")} value={config.multiplier} onChange={(v) => onUpdate("multiplier", v)} min={0.5} step={0.5} />
+        </>
+      );
+    case "DonchianBreakout":
+      return (
+        <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+      );
+    case "WilliamsR":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+          <ParamInput label={t("backtest.params.overbought")} value={config.overbought} onChange={(v) => onUpdate("overbought", v)} min={-50} max={0} />
+          <ParamInput label={t("backtest.params.oversold")} value={config.oversold} onChange={(v) => onUpdate("oversold", v)} min={-100} max={-50} />
+        </>
+      );
+    case "Cci":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.period")} value={config.period} onChange={(v) => onUpdate("period", v)} min={2} />
+          <ParamInput label={t("backtest.params.overbought")} value={config.overbought} onChange={(v) => onUpdate("overbought", v)} min={50} />
+          <ParamInput label={t("backtest.params.oversold")} value={config.oversold} onChange={(v) => onUpdate("oversold", v)} max={-50} />
+        </>
+      );
+    case "ParabolicSar":
+      return (
+        <>
+          <ParamInput label={t("backtest.params.afStart")} value={config.af_start} onChange={(v) => onUpdate("af_start", v)} min={0.01} step={0.01} />
+          <ParamInput label={t("backtest.params.afIncrement")} value={config.af_increment} onChange={(v) => onUpdate("af_increment", v)} min={0.01} step={0.01} />
+          <ParamInput label={t("backtest.params.afMax")} value={config.af_max} onChange={(v) => onUpdate("af_max", v)} min={0.1} step={0.05} />
         </>
       );
   }

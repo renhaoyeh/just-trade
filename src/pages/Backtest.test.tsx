@@ -192,14 +192,14 @@ describe("Backtest Page", () => {
   });
 
   it("runs all strategies and shows comparison table", async () => {
-    // Mock 4 calls (one per strategy)
+    // Mock calls (one per strategy)
     mockedInvoke.mockResolvedValue(mockBacktestResult);
     renderBacktest();
 
     await userEvent.click(screen.getByRole("button", { name: "全部比較" }));
 
     await waitFor(() => {
-      expect(mockedInvoke).toHaveBeenCalledTimes(5);
+      expect(mockedInvoke).toHaveBeenCalledTimes(12);
     });
 
     // Comparison table should appear

@@ -185,7 +185,14 @@
       "Rsi": "RSI",
       "BollingerBands": "Bollinger Bands",
       "Macd": "MACD",
-      "Dca": "DCA"
+      "Dca": "DCA",
+      "Stochastic": "Stochastic (KD)",
+      "EmaCrossover": "EMA Crossover",
+      "Supertrend": "Supertrend",
+      "DonchianBreakout": "Donchian Breakout",
+      "WilliamsR": "Williams %R",
+      "Cci": "CCI",
+      "ParabolicSar": "Parabolic SAR"
     },
     "params": {
       "period": "Period",
@@ -196,7 +203,13 @@
       "slowPeriod": "Slow Period",
       "signalPeriod": "Signal Period",
       "amount": "Amount per Period",
-      "intervalDays": "Interval (Trading Days)"
+      "intervalDays": "Interval (Trading Days)",
+      "kPeriod": "K Period",
+      "dPeriod": "D Period",
+      "multiplier": "Multiplier",
+      "afStart": "AF Start",
+      "afIncrement": "AF Increment",
+      "afMax": "AF Max"
     },
     "run": "Run Backtest",
     "running": "Running...",
