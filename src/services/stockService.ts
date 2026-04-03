@@ -77,7 +77,9 @@ export interface LlmConfig {
   thinking_level?: string | null;
 }
 
-export async function testLlmConnection(config: LlmConfig): Promise<string[]> {
+export type GroupedModels = Record<string, string[]>;
+
+export async function testLlmConnection(config: LlmConfig): Promise<GroupedModels> {
   return invoke("llm_test", { config });
 }
 

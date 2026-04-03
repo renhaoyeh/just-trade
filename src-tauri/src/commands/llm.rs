@@ -50,10 +50,52 @@ pub fn llm_agents() -> Vec<serde_json::Value> {
         .collect()
 }
 
+/// Categorize a model ID by capability
+fn categorize_model(id: &str) -> &'static str {
+    let id = id.to_lowercase();
+    // Reasoning
+    if id.starts_with("o1") || id.starts_with("o3") || id.starts_with("o4")
+        || id.contains("reasoning") || id.contains("deepseek-r1")
+    {
+        return "reasoning";
+    }
+    // Embedding
+    if id.contains("embed") {
+        return "embedding";
+    }
+    // Image generation
+    if id.contains("dall-e") || id.contains("imagen") || id.contains("image-generation") {
+        return "image";
+    }
+    // Audio / Speech
+    if id.contains("whisper") || id.contains("tts") || id.contains("audio") {
+        return "audio";
+    }
+    // Moderation
+    if id.contains("moderation") {
+        return "moderation";
+    }
+    // Chat (default)
+    "chat"
+}
+
+fn group_models(models: Vec<String>) -> HashMap<String, Vec<String>> {
+    let mut groups: HashMap<String, Vec<String>> = HashMap::new();
+    for m in models {
+        let cat = categorize_model(&m).to_string();
+        groups.entry(cat).or_default().push(m);
+    }
+    // Sort each group
+    for v in groups.values_mut() {
+        v.sort();
+    }
+    groups
+}
+
 /// Test LLM connection by hitting /models endpoint.
-/// Returns the list of available model IDs.
+/// Returns models grouped by capability: { "chat": [...], "reasoning": [...], ... }
 #[tauri::command]
-pub async fn llm_test(config: LlmConfig) -> Result<Vec<String>, String> {
+pub async fn llm_test(config: LlmConfig) -> Result<HashMap<String, Vec<String>>, String> {
     let api_key = config.api_key.clone().unwrap_or_default();
     let client = reqwest::Client::new();
 
@@ -84,7 +126,7 @@ pub async fn llm_test(config: LlmConfig) -> Result<Vec<String>, String> {
                         .collect()
                 })
                 .unwrap_or_default();
-            Ok(models)
+            Ok(group_models(models))
         }
         LlmProvider::Anthropic => {
             let resp = client
@@ -106,7 +148,7 @@ pub async fn llm_test(config: LlmConfig) -> Result<Vec<String>, String> {
                         .collect()
                 })
                 .unwrap_or_default();
-            Ok(models)
+            Ok(group_models(models))
         }
         LlmProvider::Google => {
             let base = config
@@ -133,7 +175,7 @@ pub async fn llm_test(config: LlmConfig) -> Result<Vec<String>, String> {
                         .collect()
                 })
                 .unwrap_or_default();
-            Ok(models)
+            Ok(group_models(models))
         }
         LlmProvider::Ollama => {
             let base = config
@@ -156,7 +198,7 @@ pub async fn llm_test(config: LlmConfig) -> Result<Vec<String>, String> {
                         .collect()
                 })
                 .unwrap_or_default();
-            Ok(models)
+            Ok(group_models(models))
         }
     }
 }

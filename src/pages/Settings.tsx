@@ -15,7 +15,9 @@ import { ThemeToggle } from "@/components/common/ThemeToggle";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -24,6 +26,7 @@ import {
   saveSettings,
   testLlmConnection,
   type LlmConfig,
+  type GroupedModels,
 } from "@/services/stockService";
 
 interface ProviderSettings {
@@ -62,7 +65,7 @@ function ProviderCard({
   onChange: (s: ProviderSettings) => void;
 }) {
   const { t } = useTranslation();
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<GroupedModels>({});
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -78,7 +81,8 @@ function ProviderCard({
       };
       const result = await testLlmConnection(config);
       setModels(result);
-      setTestResult({ ok: true, msg: t("settings.testSuccess", { count: result.length }) });
+      const total = Object.values(result).reduce((sum, arr) => sum + arr.length, 0);
+      setTestResult({ ok: true, msg: t("settings.testSuccess", { count: total }) });
     } catch (e) {
       setTestResult({ ok: false, msg: String(e) });
     } finally {
@@ -144,7 +148,7 @@ function ProviderCard({
             {testing ? t("settings.testing") : t("settings.test")}
           </Button>
 
-          {models.length > 0 ? (
+          {Object.keys(models).length > 0 ? (
             <Select
               value={settings.model || ""}
               onValueChange={(v) => onChange({ ...settings, model: v })}
@@ -153,8 +157,13 @@ function ProviderCard({
                 <SelectValue placeholder={t("settings.selectModel")} />
               </SelectTrigger>
               <SelectContent>
-                {models.map((m) => (
-                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                {Object.entries(models).map(([category, ids]) => (
+                  <SelectGroup key={category}>
+                    <SelectLabel className="capitalize">{category}</SelectLabel>
+                    {ids.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
