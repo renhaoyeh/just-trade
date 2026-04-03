@@ -98,6 +98,9 @@
     "apiKeysDesc": "輸入對應提供者的 API 金鑰",
     "save": "儲存",
     "saving": "儲存中...",
-    "saved": "已儲存"
+    "saved": "已儲存",
+    "test": "測試連線",
+    "testing": "測試中...",
+    "testSuccess": "連線成功 ({{model}})"
   }
 }

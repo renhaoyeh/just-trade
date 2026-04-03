@@ -50,6 +50,18 @@ pub fn llm_agents() -> Vec<serde_json::Value> {
         .collect()
 }
 
+/// Test LLM connection by sending a simple ping message
+#[tauri::command]
+pub async fn llm_test(config: LlmConfig) -> Result<String, String> {
+    let client = create_client(config).map_err(|e| e.to_string())?;
+    let messages = vec![ChatMessage {
+        role: Role::User,
+        content: "Reply with only the word OK.".to_string(),
+    }];
+    let resp = client.chat(&messages).await.map_err(|e| e.to_string())?;
+    Ok(resp.model)
+}
+
 /// Chat using a predefined agent persona
 #[tauri::command]
 pub async fn llm_agent_chat(

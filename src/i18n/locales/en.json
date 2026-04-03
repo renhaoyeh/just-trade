@@ -98,6 +98,9 @@
     "apiKeysDesc": "Enter the API key for the selected provider",
     "save": "Save",
     "saving": "Saving...",
-    "saved": "Saved"
+    "saved": "Saved",
+    "test": "Test Connection",
+    "testing": "Testing...",
+    "testSuccess": "Connected ({{model}})"
   }
 }

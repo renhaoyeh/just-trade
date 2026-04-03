@@ -61,6 +61,22 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
   return invoke("save_settings", { settings });
 }
 
+export interface LlmConfig {
+  provider: string;
+  model: string;
+  api_key?: string | null;
+  base_url?: string | null;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  reasoning_effort?: string | null;
+  effort?: string | null;
+  thinking_level?: string | null;
+}
+
+export async function testLlmConnection(config: LlmConfig): Promise<string> {
+  return invoke("llm_test", { config });
+}
+
 export async function getLlmModels(provider: string): Promise<string[]> {
   return invoke("llm_models", { provider });
 }

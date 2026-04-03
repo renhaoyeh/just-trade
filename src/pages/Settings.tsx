@@ -23,7 +23,9 @@ import {
   getSettings,
   saveSettings,
   getLlmModels,
+  testLlmConnection,
   type AppSettings,
+  type LlmConfig,
 } from "@/services/stockService";
 
 const PROVIDERS = [
@@ -48,6 +50,8 @@ export default function Settings() {
   const [models, setModels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
 
   useEffect(() => {
     getSettings().then(setSettings).catch(console.error);
@@ -75,6 +79,33 @@ export default function Settings() {
       console.error(e);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const apiKey =
+        provider === "openai" ? settings.openai_api_key :
+        provider === "anthropic" ? settings.anthropic_api_key :
+        provider === "google" ? settings.google_api_key :
+        provider === "groq" ? settings.groq_api_key :
+        undefined;
+
+      const config: LlmConfig = {
+        provider,
+        model: settings.llm_model || models[0] || "",
+        api_key: apiKey,
+        base_url: provider === "ollama" ? (settings.ollama_base_url || "http://localhost:11434/v1") : null,
+      };
+
+      const model = await testLlmConnection(config);
+      setTestResult({ ok: true, message: t("settings.testSuccess", { model }) });
+    } catch (e) {
+      setTestResult({ ok: false, message: String(e) });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -212,8 +243,16 @@ export default function Settings() {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? t("settings.saving") : t("settings.save")}
           </Button>
+          <Button variant="outline" onClick={handleTest} disabled={testing}>
+            {testing ? t("settings.testing") : t("settings.test")}
+          </Button>
           {saved && (
             <span className="text-sm text-emerald-500">{t("settings.saved")}</span>
+          )}
+          {testResult && (
+            <span className={`text-sm ${testResult.ok ? "text-emerald-500" : "text-red-500"}`}>
+              {testResult.message}
+            </span>
           )}
         </div>
       </div>
