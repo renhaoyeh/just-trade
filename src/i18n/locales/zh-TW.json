@@ -88,6 +88,7 @@
   },
   "settings": {
     "title": "設定",
+    "serverUrl": "伺服器位址",
     "selectModel": "選擇模型",
     "save": "儲存",
     "saving": "儲存中...",

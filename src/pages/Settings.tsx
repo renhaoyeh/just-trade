@@ -88,6 +88,14 @@ function ProviderCard({
 
   const hasKey = provider.needsKey ? !!settings.api_key : true;
 
+  // Auto-fetch models on mount if key exists
+  useEffect(() => {
+    if (hasKey && models.length === 0 && !testing) {
+      handleTest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -114,7 +122,7 @@ function ProviderCard({
           </div>
         ) : (
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Base URL</label>
+            <label className="text-xs text-muted-foreground">{t("settings.serverUrl")}</label>
             <Input
               value={settings.base_url || ""}
               onChange={(e) => onChange({ ...settings, base_url: e.target.value || null })}

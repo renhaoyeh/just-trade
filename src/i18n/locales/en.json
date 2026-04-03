@@ -88,6 +88,7 @@
   },
   "settings": {
     "title": "Settings",
+    "serverUrl": "Server URL",
     "selectModel": "Select a model",
     "save": "Save",
     "saving": "Saving...",
