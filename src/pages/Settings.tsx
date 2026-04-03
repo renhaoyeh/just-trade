@@ -88,14 +88,15 @@ function ProviderCard({
 
   const hasKey = provider.needsKey ? !!settings.api_key : true;
 
-  // Auto-fetch models on mount if credentials exist
+  // Auto-fetch models when credentials become available (e.g. loaded from settings)
   const hasCredentials = provider.needsKey ? !!settings.api_key : !!settings.base_url;
+  const [autoFetched, setAutoFetched] = useState(false);
   useEffect(() => {
-    if (hasCredentials && models.length === 0 && !testing) {
+    if (hasCredentials && !autoFetched) {
+      setAutoFetched(true);
       handleTest();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasCredentials, autoFetched, handleTest]);
 
   return (
     <Card>
