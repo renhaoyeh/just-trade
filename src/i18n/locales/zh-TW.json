@@ -101,6 +101,7 @@
     "saved": "已儲存",
     "test": "測試連線",
     "testing": "測試中...",
+    "testFirst": "請先輸入 API Key 並測試連線",
     "testSuccess": "連線成功，{{count}} 個可用模型"
   }
 }

@@ -101,6 +101,7 @@
     "saved": "Saved",
     "test": "Test Connection",
     "testing": "Testing...",
+    "testFirst": "Enter API key and test connection first",
     "testSuccess": "Connected, {{count}} models available"
   }
 }

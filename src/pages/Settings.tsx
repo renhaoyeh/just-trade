@@ -22,7 +22,6 @@ import {
 import {
   getSettings,
   saveSettings,
-  getLlmModels,
   testLlmConnection,
   type AppSettings,
   type LlmConfig,
@@ -57,12 +56,10 @@ export default function Settings() {
     getSettings().then(setSettings).catch(console.error);
   }, []);
 
+  // Reset models when provider changes — user needs to test connection again
   useEffect(() => {
-    if (settings.llm_provider) {
-      getLlmModels(settings.llm_provider)
-        .then(setModels)
-        .catch(() => setModels([]));
-    }
+    setModels([]);
+    setTestResult(null);
   }, [settings.llm_provider]);
 
   const update = (key: keyof AppSettings, value: string | null) => {
@@ -171,11 +168,7 @@ export default function Settings() {
                   </SelectContent>
                 </Select>
               ) : (
-                <Input
-                  value={settings.llm_model || ""}
-                  onChange={(e) => update("llm_model", e.target.value || null)}
-                  placeholder={t("settings.modelPlaceholder")}
-                />
+                <p className="text-sm text-muted-foreground">{t("settings.testFirst")}</p>
               )}
             </div>
           </CardContent>
